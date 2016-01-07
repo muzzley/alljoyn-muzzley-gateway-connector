@@ -1411,6 +1411,7 @@ XMPPConnector::SendSetReply(
 
 void
 XMPPConnector::SendGetAllRequest(
+    const string& ifaceName,
     const InterfaceDescription::Member* member,
     const string& destName,
     const string& destPath
@@ -1422,7 +1423,7 @@ XMPPConnector::SendGetAllRequest(
     msgStream << ALLJOYN_CODE_GET_ALL << "\n";
     msgStream << destName << "\n";
     msgStream << destPath << "\n";
-    msgStream << member->iface->GetName() << "\n";
+    msgStream << ifaceName << "\n";
     msgStream << member->name << "\n";
 
     SendMessage(msgStream.str(), ALLJOYN_CODE_GET_ALL);
@@ -2368,7 +2369,7 @@ XMPPConnector::ReceiveGetAllRequest(
     }
 
     MsgArg values;
-    err = proxy.GetAllProperties(ifaceName.c_str(), values, 5000);              //cout << "Got all properties:\n" << util::msgarg::ToString(values, 2) << endl;
+    err = proxy.GetAllProperties(ifaceName.c_str(), values, 15000);              cout << "Got all properties:\n" << util::msgarg::ToString(values, 2) << endl;
     if(err != ER_OK)
     {
         LOG_RELEASE("Failed to get all properties: %s",

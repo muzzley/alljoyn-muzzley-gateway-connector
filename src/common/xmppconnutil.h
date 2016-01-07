@@ -231,14 +231,14 @@ namespace bus {
 
 
     /* Recursively get BusObject information from an attachment. */
-    void
+    QStatus
     GetBusObjectsRecursive(
         vector<BusObjectInfo>& busObjects,
         ProxyBusObject&        proxy
         );
 
     /* Asynchronously get BusObject information from an attachment. */
-    void
+    QStatus
     GetBusObjectsAsync(
         ProxyBusObject*                                proxy,
         GetBusObjectsAsyncReceiver*                    receiver,
