@@ -1,6 +1,6 @@
 <?xml version="1.0"?>
 <busconfig>
-    <policy user="xmppconn">
+    <policy user="muzzleyconn">
         <allow send_destination="*" eavesdrop="true"/>
         <allow send_type="*"/>
         <allow receive_type="*"/>
