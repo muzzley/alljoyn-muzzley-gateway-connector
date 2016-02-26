@@ -26,13 +26,19 @@ if not gateway_env.has_key('_ALLJOYNCORE_'):
 
 
 # Muzzley connector build flags
-gateway_env.Append(CPPPATH = ['$LIBXML2_INCDIR', '$RAPIDJSON_INCDIR', '.'])
-gateway_env.Append(LIBPATH = ['$LIBXML2_LIBDIR', '.'])
+gateway_env.Append(CPPPATH = ['$LIBXML2_INCDIR', '$LIBGLIB_INCDIR', '$LIBMOSQUITTO_INCDIR', 
+ 						      '$LIBGUPNP_INCDIR', '$LIBGSSDP_INCDIR', '$LIBCURL_INCDIR',
+ 						      '$RAPIDJSON_INCDIR', '.'])
+
+gateway_env.Append(LIBPATH = ['$LIBXML2_LIBDIR', '$LIBMOSQUITTO_LIBDIR', '.'])
+
 gateway_env.Append(CPPFLAGS = [ '-Wall', '-pipe', '-std=c++0x', '-fno-exceptions', '-Wno-long-long',
 						      '-Wno-deprecated', '-DDEBUG', '-g3', '-g', '-DQCC_OS_LINUX', 
 						      '-DQCC_OS_GROUP_POSIX', '-fexceptions'])
 
-gateway_env.Append(LIBS = ['ssl', 'crypto', 'resolv', 'stdc++', 'pthread', 'rt', 'z', 'gcc_s', 'c', 'uuid'])
+
+gateway_env.Append(LIBS = ['ssl', 'crypto', 'resolv', 'rt', 'z', 'c', 'uuid'])
+gateway_env.Append(LIBS = ['mosquitto', 'libglib-2.0', 'libsoup-2.4', 'libgupnp-1.0', 'libgssdp-1.0', 'curl'])
 gateway_env.Prepend(LIBS = ['alljoyn_gwconnector','alljoyn_config', 'alljoyn_notification', 'alljoyn_about', 'alljoyn_services_common', 'alljoyn'])
 
 if gateway_env['CPU'] == 'arm':
@@ -40,16 +46,6 @@ if gateway_env['CPU'] == 'arm':
 
 if gateway_env['NO_AJ_GATEWAY'] == True:
     gateway_env.Append(CPPFLAGS=['-DNO_AJ_GATEWAY'])
-
-
-# Muzzley connector UPNP library flags
-gateway_env.Append(LIBS = ['libglib-2.0', 'libxml2', 'libgupnp-1.0', 'libgssdp-1.0', 'curl']);
-gateway_env.Append(CPPPATH = '/usr/include/glib-2.0');
-gateway_env.Append(CPPPATH = '/usr/lib/glib-2.0/include');
-gateway_env.Append(CPPPATH = '/usr/include/libsoup-2.4');
-gateway_env.Append(CPPPATH = '/usr/include/libxml2');
-gateway_env.Append(CPPPATH = '/usr/include/gupnp-1.0');
-gateway_env.Append(CPPPATH = '/usr/include/gssdp-1.0');
 
 
 # Compile source files
