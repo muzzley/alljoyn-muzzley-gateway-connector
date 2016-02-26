@@ -1,4 +1,5 @@
-# Copyright (c) 2015, AllSeen Alliance. All rights reserved.
+#******************************************************************************
+# Copyright (c) 2013-2014, AllSeen Alliance. All rights reserved.
 #
 #    Permission to use, copy, modify, and/or distribute this software for any
 #    purpose with or without fee is hereby granted, provided that the above
@@ -11,32 +12,59 @@
 #    WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN
 #    ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
 #    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
+#*****************************************************************************
 
-Import('xmppconn_env')
+Import('gateway_env')
 import os
 
-if not xmppconn_env.has_key('_ALLJOYNCORE_'):
-    xmppconn_env.Append(LIBS = ['alljoyn'])
-    if xmppconn_env['OS'] == 'openwrt':
-        xmppconn_env.AppendUnique(LIBS = [ 'stdc++', 'pthread', 'gcc_s' ])
-    if xmppconn_env['OS'] == 'linux':
-        xmppconn_env.AppendUnique(LIBS = [ 'pthread' ])
+if not gateway_env.has_key('_ALLJOYNCORE_'):
+    gateway_env.Append(LIBS = ['alljoyn'])
+    if gateway_env['OS'] == 'openwrt':
+        gateway_env.AppendUnique(LIBS = [ 'stdc++', 'pthread', 'gcc_s' ])
+    if gateway_env['OS'] == 'linux':
+        gateway_env.AppendUnique(LIBS = [ 'pthread' ])
 
-xmppconn_env.Append(CPPPATH = ['$LIBXML2_INCDIR', '$RAPIDJSON_INCDIR', '$LIBSTROPHE_INCDIR', '.'])
-xmppconn_env.Append(LIBPATH = ['$LIBXML2_LIBDIR', '$LIBSTROPHE_LIBDIR', '.'])
-xmppconn_env.Append(LIBS = ['libxml2', 'strophe', 'ssl', 'crypto', 'resolv', 'rt', 'z', 'c', 'uuid'])
-xmppconn_env.Prepend(LIBS = ['alljoyn_about', 'alljoyn_config', 'alljoyn_services_common'])
 
-if xmppconn_env['USE_GATEWAY_AGENT'] == 'off':
-    xmppconn_env.Append(CCFLAGS = ['-DNO_AJ_GATEWAY'])
+# Muzzley connector build flags
+gateway_env.Append(CPPPATH = ['$LIBXML2_INCDIR', '$RAPIDJSON_INCDIR', '.'])
+gateway_env.Append(LIBPATH = ['$LIBXML2_LIBDIR', '.'])
+gateway_env.Append(CPPFLAGS = [ '-Wall', '-pipe', '-std=c++0x', '-fno-exceptions', '-Wno-long-long',
+						      '-Wno-deprecated', '-DDEBUG', '-g3', '-g', '-DQCC_OS_LINUX', 
+						      '-DQCC_OS_GROUP_POSIX', '-fexceptions'])
 
-srcs = xmppconn_env.Glob('app/*.cpp')
-srcs.extend(xmppconn_env.Glob('common/*.cpp'))
-srcs.extend(xmppconn_env.Glob('transport/*.cpp'))
-objs = xmppconn_env.Object(srcs)
+gateway_env.Append(LIBS = ['ssl', 'crypto', 'resolv', 'stdc++', 'pthread', 'rt', 'z', 'gcc_s', 'c', 'uuid'])
+gateway_env.Prepend(LIBS = ['alljoyn_gwconnector','alljoyn_config', 'alljoyn_notification', 'alljoyn_about', 'alljoyn_services_common', 'alljoyn'])
 
-xmppconn_env.Append(CCFLAGS = ['-Wno-deprecated-declarations'])
+if gateway_env['CPU'] == 'arm':
+    gateway_env.Append(CPPFLAGS=['-llzma'])
 
-prog = xmppconn_env.Program('xmppconn', objs)
+if gateway_env['NO_AJ_GATEWAY'] == True:
+    gateway_env.Append(CPPFLAGS=['-DNO_AJ_GATEWAY'])
+
+
+# Muzzley connector UPNP library flags
+gateway_env.Append(LIBS = ['libglib-2.0', 'libxml2', 'libgupnp-1.0', 'libgssdp-1.0', 'curl']);
+gateway_env.Append(CPPPATH = '/usr/include/glib-2.0');
+gateway_env.Append(CPPPATH = '/usr/lib/glib-2.0/include');
+gateway_env.Append(CPPPATH = '/usr/include/libsoup-2.4');
+gateway_env.Append(CPPPATH = '/usr/include/libxml2');
+gateway_env.Append(CPPPATH = '/usr/include/gupnp-1.0');
+gateway_env.Append(CPPPATH = '/usr/include/gssdp-1.0');
+
+
+# Compile source files
+srcs = gateway_env.Glob('*.cc')
+srcs.extend(gateway_env.Glob('transport/*.cc'))
+srcs.extend(gateway_env.Glob('transport/*.cpp'))
+srcs.extend(gateway_env.Glob('common/*.cc'))
+srcs.extend(gateway_env.Glob('common/*.cpp'))
+srcs.extend(gateway_env.Glob('app/*.cc'))
+srcs.extend(gateway_env.Glob('app/*.cpp'))
+objs = gateway_env.Object(srcs)
+
+gateway_env.Append(CCFLAGS = ['-Wno-deprecated-declarations'])
+
+prog = gateway_env.Program('muzzleyconn', objs)
 
 Return('prog')
+
