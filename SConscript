@@ -38,7 +38,7 @@ vars.Add(PathVariable('RAPIDJSON_INCDIR',
 
 vars.Add(PathVariable('LIBMOSQUITTO_INCDIR',
                       'Directory containing the mosquitto include files.',
-                       os.environ.get('LIBMOSQUITTO_LIBDIR','/usr/mips-openwrt-linux-uclibc/include')))
+                       os.environ.get('LIBMOSQUITTO_INCDIR','/usr/mips-openwrt-linux-uclibc/include')))
 
 vars.Add(PathVariable('LIBMOSQUITTO_LIBDIR',
                       'Directory containing the mosquitto library files.',
@@ -46,23 +46,23 @@ vars.Add(PathVariable('LIBMOSQUITTO_LIBDIR',
 
 vars.Add(PathVariable('LIBGLIB_INCDIR',
                       'Directory containing the glib include files.',
-                       os.environ.get('LIBMOSQUITTO_LIBDIR','/usr/include/glib-2.0')))
+                       os.environ.get('LIBGLIB_INCDIR','/usr/include/glib-2.0')))
 
 vars.Add(PathVariable('LIBGLIB_LIBDIR',
                       'Directory containing the glib library files.',
-                      os.environ.get('LIBMOSQUITTO_LIBDIR','/usr/mips-openwrt-linux-uclibc/lib')))
+                      os.environ.get('LIBGLIB_LIBDIR','/usr/mips-openwrt-linux-uclibc/lib')))
 
 vars.Add(PathVariable('LIBSOUP_INCDIR',
                       'Directory containing the soup include files.',
-                       os.environ.get('LIBSOUP_LIBDIR','/usr/include/libsoup-2.4')))
+                       os.environ.get('LIBSOUP_INCDIR','/usr/include/libsoup-2.4')))
 
 vars.Add(PathVariable('LIBGUPNP_INCDIR',
                       'Directory containing the gupnp include files.',
-                       os.environ.get('LIBGUPNP_LIBDIR','/usr/include/gupnp-1.0')))
+                       os.environ.get('LIBGUPNP_INCDIR','/usr/include/gupnp-1.0')))
 
 vars.Add(PathVariable('LIBGSSDP_INCDIR',
                       'Directory containing the gssdp include files.',
-                       os.environ.get('LIBGSSDP_LIBDIR', '/usr/include/gssdp-1.0')))
+                       os.environ.get('LIBGSSDP_INCDIR', '/usr/include/gssdp-1.0')))
 
 vars.Add(EnumVariable('USE_GATEWAY_AGENT',
                       'Build with Gateway Agent as a dependency.',

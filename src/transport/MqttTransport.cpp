@@ -55,7 +55,9 @@ MqttTransport::~MqttTransport(){
 }
 
 Transport::ConnectionError MqttTransport::RunOnce(){
-
+    Transport::ConnectionError err;
+    err = none;
+    return err;
 }
 
 void MqttTransport::StopImpl(){
@@ -69,12 +71,15 @@ void MqttTransport::SubscribeImpl(const string& topic){
     if(_return==MOSQ_ERR_SUCCESS){
         printf("Subscribed: %s successfully\n\n", topic.c_str());   
     }else{
-        printf("Failed to subscibe MQTT topic: %s Error: \n\n", topic.c_str(), mosquitto_strerror(_return)); 
+        printf("Failed to subscibe MQTT topic: %s Error: %s \n\n", topic.c_str(), mosquitto_strerror(_return)); 
     }
 }
 
 Transport::ConnectionError MqttTransport::SendImpl(const string& topic, const string& message){
     this->publish(this->mosq_trans, topic, message);
+    Transport::ConnectionError err;
+    err = none;
+    return err;
 }
 
 void MqttTransport::my_message_callback(struct mosquitto *mosq, void *userdata, const struct mosquitto_message *message){
