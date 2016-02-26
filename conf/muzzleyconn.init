@@ -1,16 +1,16 @@
 #!/bin/sh
 ### BEGIN INIT INFO
-# Provides: xmppconn
+# Provides: muzzleyconn
 # Required-Start: $local_fs $network $named $time $syslog
 # Required-Stop: $local_fs $network $named $time $syslog
 # Default-Start: 2 3 4 5
 # Default-Stop: 0 1 6
-# Description: Provides the xmppconn service.
+# Description: Provides the muzzleyconn service.
 ### END INIT INFO
 
-SCRIPT=xmppconn
+SCRIPT=muzzleyconn
 RUNAS=root
-NAME=xmppconn
+NAME=muzzleyconn
 PIDFILE=/var/run/$NAME.pid
 LOGFILE=/var/log/$NAME.log
 

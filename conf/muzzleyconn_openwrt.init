@@ -9,17 +9,17 @@ EXTRA_COMMANDS="status"
 EXTRA_HELP="        status  Returns the status of the daemon"
 
 start() {
-        cd /etc/xmppconn
-        service_start /usr/bin/xmppconn
+        cd /etc/muzzleyconn
+        service_start /usr/bin/muzzleyconn
 }
 
 stop() {
-        service_stop /usr/bin/xmppconn
-        rm -f /tmp/run/xmppconn.pid
+        service_stop /usr/bin/muzzleyconn
+        rm -f /tmp/run/muzzleyconn.pid
 }
 
 status() {
-        if [ -f /tmp/run/xmppconn.pid ];
+        if [ -f /tmp/run/muzzleyconn.pid ];
         then
                 echo "Running"
         else
