@@ -14,7 +14,7 @@
  * CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  */
 
-#include "xmppconnutil.h"
+#include "muzzleyconnutil.h"
 #include <string.h>
 #include <sstream>
 #include <string>

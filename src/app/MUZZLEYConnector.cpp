@@ -23,19 +23,64 @@
 #include <pthread.h>
 #include <fstream>
 #include <iostream>
+#include <algorithm>
 
-#include "XMPPConnector.h"                                                      // TODO: internal documentation
-#include "transport/XmppTransport.h"
+#include "MUZZLEYConnector.h"
+#include "transport/MqttTransport.h"
+#include "common/sole.h"
+
 #include "RemoteBusAttachment.h"
 #include "RemoteBusListener.h"
 #include "RemoteBusObject.h"
+#include <alljoyn/about/AnnouncementRegistrar.h>
+
+using namespace json11;
+
+#include <stdlib.h>
+#include <unistd.h>
+#include <string.h>
+#include <errno.h>
+#include <iostream>
+#include <sys/types.h>
+#include <sys/socket.h>
+#include <netinet/in.h>
+#include <arpa/inet.h>
+
+#include <iostream>
+#include <thread>
+
+#define PORT_MIN    1024
+#define PORT_MAX    65535
+
+/*
+//MuzzleyPROD*******************************************
+const char* ROUTER_RECEIVE_ALLJOYN = "router/7100cb21-798b-4dd6-9c9d-1a39a874f587/io/i/type/alljoyn";
+const char* ROUTER_PUBLISH_ALLJOYN = "router/7100cb21-798b-4dd6-9c9d-1a39a874f587/io/o/type/alljoyn";
+const char* ROUTER_RECEIVE_UPNP = "router/7100cb21-798b-4dd6-9c9d-1a39a874f587/io/i/type/upnp";
+const char* ROUTER_PUBLISH_UPNP = "router/7100cb21-798b-4dd6-9c9d-1a39a874f587/io/o/type/upnp";
+const char* ROUTER_RECEIVE_CONFIG = "router/7100cb21-798b-4dd6-9c9d-1a39a874f587/io/i/type/config";
+const char* ROUTER_PUBLISH_CONFIG = "router/7100cb21-798b-4dd6-9c9d-1a39a874f587/io/o/type/config";
+//*****************************************************
+*/
+
+//MuzzleyBoothDEV**************************************
+const char* ROUTER_RECEIVE_ALLJOYN = "router/3277a741-e243-476d-a7bc-db87d4876bff/io/i/type/alljoyn";
+const char* ROUTER_PUBLISH_ALLJOYN = "router/3277a741-e243-476d-a7bc-db87d4876bff/io/o/type/alljoyn";
+const char* ROUTER_RECEIVE_UPNP = "router/3277a741-e243-476d-a7bc-db87d4876bff/io/i/type/upnp";
+const char* ROUTER_PUBLISH_UPNP = "router/3277a741-e243-476d-a7bc-db87d4876bff/io/o/type/upnp";
+const char* ROUTER_RECEIVE_CONFIG = "router/3277a741-e243-476d-a7bc-db87d4876bff/io/i/type/config";
+const char* ROUTER_PUBLISH_CONFIG = "router/3277a741-e243-476d-a7bc-db87d4876bff/io/o/type/config";
+//*****************************************************
+
+const char* ROUTER_DEVICEKEY_PATH = "/etc/muzzley/routerid.key";
+
 
 
 using namespace ajn;
+using namespace ajn::services;
 #ifndef NO_AJ_GATEWAY
 using namespace ajn::gw;
 #endif // !NO_AJ_GATEWAY
-using namespace ajn::services;
 using namespace qcc;
 
 using std::string;
@@ -50,13 +95,13 @@ using std::ostringstream;
 class AllJoynListener :
     public BusListener,
     public SessionPortListener,
-    public AnnounceHandler,
+    public ajn::services::AnnounceHandler,
     public ProxyBusObject::Listener,
     public util::bus::GetBusObjectsAsyncReceiver
 {
 public:
     AllJoynListener(
-        XMPPConnector* connector,
+        MUZZLEYConnector* connector,
         BusAttachment* bus
         ) :
         BusListener(),
@@ -69,6 +114,12 @@ public:
     ~AllJoynListener()
     {
         m_bus->UnregisterAllHandlers(this);
+        while(!m_sessionlessSignals.empty())
+        {
+            const InterfaceDescription::Member* member(m_sessionlessSignals.front());
+            delete member;
+            m_sessionlessSignals.erase(m_sessionlessSignals.begin());
+        }
     }
 
     void
@@ -78,7 +129,7 @@ public:
         void*                               context
         )
     {
-        FNLOG
+        FNLOG;
 
         // Send the advertisement via XMPP
         m_connector->SendAdvertisement(
@@ -91,15 +142,130 @@ public:
     }
 
     void
+    SessionlessSignalHandler(
+        const InterfaceDescription::Member* member,
+        const char* srcPath,
+        Message& message
+        )
+    {
+        // Check for a sessionless signal since right now we have to
+        // always register all signals even if they're not sessionless.
+        // All sessionless signals have a session ID of 0.
+        if ( message->GetSessionId() == 0 )
+        {
+            FNLOG;
+            m_connector->SendSignal(
+                member,
+                srcPath,
+                message
+                );
+        }
+    }
+
+    QStatus
+    AddSessionlessSignalHandler(
+        const InterfaceDescription::Member* member
+        )
+    {
+        FNLOG;
+
+        // Don't add it if we already registered it
+        for(vector<const InterfaceDescription::Member*>::const_iterator it(m_sessionlessSignals.begin());
+            m_sessionlessSignals.end() != it; ++it)
+        {
+            const InterfaceDescription::Member* current(*it);
+            if(*member == *current &&
+                string(member->iface->GetName()) == string(current->iface->GetName()))
+            {
+                return ER_OK;
+            }
+        }
+
+        // We need to register the signal handler since it's not already registered
+        m_sessionlessSignals.push_back(new InterfaceDescription::Member(*member));
+        QStatus status = m_bus->RegisterSignalHandler(
+            this,
+            static_cast<MessageReceiver::SignalHandler>(&AllJoynListener::SessionlessSignalHandler),
+            member,
+            NULL
+            );
+        if(ER_OK != status)
+        {
+            LOG_RELEASE("Failed to register signal handler for %s in interface %s: %s",
+                    member->name.c_str(), member->iface->GetName(), QCC_StatusText(status));
+        }
+        else
+        {
+            LOG_VERBOSE("Registered signal handler for %s in interface %s",
+                    member->name.c_str(), member->iface->GetName());
+        }
+
+        return status;
+    }
+
+    void
     GetBusObjectsAnnouncementCallback(
         ProxyBusObject*                     obj,
         vector<util::bus::BusObjectInfo>    busObjects,
         void*                               context
         )
     {
-        FNLOG
+        FNLOG;
         IntrospectCallbackContext* ctx =
             static_cast<IntrospectCallbackContext*>(context);
+
+        // Go through the bus objects and add sessionless signal handlers to m_bus for each signal
+        for ( vector<util::bus::BusObjectInfo>::const_iterator it(busObjects.begin());
+              busObjects.end() != it; ++it )
+        {
+            bool has_signal(false);
+            vector<const InterfaceDescription*> ifaces(it->interfaces);
+            for ( vector<const InterfaceDescription*>::const_iterator ifaceit(ifaces.begin());
+                  ifaces.end() != ifaceit; ++ifaceit )
+            {
+                const InterfaceDescription* iface(*ifaceit);
+
+                // Skip signals from interfaces that we don't want to send over (like org.alljoyn.Bus and org.alljoyn.About)
+                if(m_connector->IsInterfaceKnownToAlreadyExist(iface->GetName()))
+                {
+                    continue;
+                }
+
+                size_t count( iface->GetMembers() );
+                const InterfaceDescription::Member** members = new const InterfaceDescription::Member*[count];
+
+                count = iface->GetMembers( members, count );
+                for ( size_t index(0); index < count; ++index )
+                {
+                    if ( members[index] && members[index]->memberType == MESSAGE_SIGNAL )
+                    {
+                        // We have found a sessionless signal. Register a handler if we don't already have one
+                        // HACK: We actually have to register all signals, not just sessionless
+                        //  because the InterfaceDescription isn't actually required to tell us, and
+                        //  even normal things like Notifications don't set the isSessionlessSignal flag
+                        //  or add a sessionless annotation, so there's no way for us to know until we
+                        //  receive the signal and check that its session ID is 0.
+                        AddSessionlessSignalHandler(members[index]);
+                        has_signal = true;
+                    }
+                }
+
+                if(has_signal)
+                {
+                    string matchRule = "type='signal',sessionless='t',interface='" + string(iface->GetName()) + "'";
+                    /*
+                    QStatus status = m_bus->AddMatchNonBlocking(matchRule.c_str());
+                    if(ER_OK != status)
+                    {
+                        LOG_RELEASE("Failed to add sessionless signal match rule \"%s\": %s",
+                                matchRule.c_str(), QCC_StatusText(status));
+                    }
+                    */
+                }
+
+                delete[] members;
+            }
+        }
 
         // Send the announcement via XMPP
         m_connector->SendAnnounce(
@@ -121,13 +287,8 @@ public:
         void*           context
         )
     {
-        FNLOG
-        /** TODO: REQUIRED
-         * Register sessionless signal handlers for announcing/advertising apps
-         * (need to implement the required interfaces on m_bus). Other method/
-         * signal handlers are registered when a session is joined. This fix
-         * MIGHT allow notifications to be handled naturally.
-         */
+        FNLOG;
+
         IntrospectCallbackContext* ctx =
                 static_cast<IntrospectCallbackContext*>(context);
 
@@ -189,11 +350,96 @@ public:
         delete ctx;
     }
 
+    /*
     void
     FoundAdvertisedName(
         const char*   name,
         TransportMask transport,
         const char*   namePrefix
+        )
+    {
+        // Do not re-advertise these
+        if(name == strstr(name, "org.alljoyn.BusNode") ||
+           name == strstr(name, "org.alljoyn.sl")      ||
+           name == strstr(name, "org.alljoyn.About.sl"))
+        {
+            return;
+        }
+
+        // Do not send if we are the ones transmitting the advertisement
+        if(m_connector->OwnsWellKnownName(name))
+        {
+            return;
+        }
+
+        FNLOG;
+
+        LOG_DEBUG("Found advertised name: %s", name);
+
+        m_bus->EnableConcurrentCallbacks();
+
+        // Get the objects and interfaces implemented by the advertising device
+        SessionId sid = 0;
+        SessionOpts opts(SessionOpts::TRAFFIC_MESSAGES, true,
+                SessionOpts::PROXIMITY_ANY, TRANSPORT_ANY);
+
+        if (m_bus->IsStopping()   ||
+            !m_bus->IsConnected() ||
+            !m_bus->IsStarted()   ||
+            m_connector->m_transport->GetConnectionState() != Transport::connected)
+        {
+            LOG_DEBUG("Session will not be joined because the bus attachment or the connection is not in a valid state");
+            return;
+        }
+
+        QStatus err = ER_OK;
+        SessionPort port = m_connector->GetSessionPort(name);
+
+        if (port)
+        {
+            err = m_bus->JoinSession(name, port, NULL, sid, opts);
+        }
+
+        if(err != ER_OK && err != ER_ALLJOYN_JOINSESSION_REPLY_ALREADY_JOINED)
+        {
+            LOG_RELEASE("Failed to join session with Advertising device: %s",
+                    QCC_StatusText(err));
+            return;
+        }
+
+        ProxyBusObject* proxy = new ProxyBusObject(*m_bus, name, "/", 0);
+        if(!proxy->IsValid())
+        {
+            LOG_RELEASE("Invalid ProxyBusObject for %s", name);
+            delete proxy;
+            return;
+        }
+
+        IntrospectCallbackContext* ctx = new IntrospectCallbackContext();
+        ctx->introspectReason = IntrospectCallbackContext::advertisement;
+        ctx->sessionId = 0;
+        ctx->proxy = proxy;
+        err = proxy->IntrospectRemoteObjectAsync(
+                this,
+                static_cast<ProxyBusObject::Listener::IntrospectCB>(
+                &AllJoynListener::IntrospectCallback),
+                ctx);
+        if(err != ER_OK)
+        {
+            LOG_RELEASE("Failed asynchronous introspect for advertised attachment: %s",
+                    QCC_StatusText(err));
+            delete proxy;
+            delete ctx;
+            return;
+        }
+    }
+    */
+
+
+
+    void
+    FoundAdvertisedName(
+        const char*   name
         )
     {
         // Do not re-advertise these
@@ -244,6 +490,11 @@ public:
         }
     }
 
+
+
+
+
+
     void
     LostAdvertisedName(
         const char*   name,
@@ -258,7 +509,7 @@ public:
         {
             return;
         }
-        FNLOG
+        FNLOG;
 
         LOG_DEBUG("Lost advertised name: %s", name);
         m_connector->SendAdvertisementLost(name);
@@ -271,7 +522,7 @@ public:
         const char* newOwner
         )
     {
-        FNLOG
+        FNLOG;
         /**
          * If owner changed to nobody, an Announcing app may have gone offline.
          * Send the busName to the XMPP server so that any remote connectors can
@@ -303,7 +554,7 @@ public:
         {
             return;
         }
-        FNLOG
+        FNLOG;
 
         LOG_DEBUG("Received Announce: %s", busName);
         m_bus->EnableConcurrentCallbacks();
@@ -385,30 +636,31 @@ private:
         ProxyBusObject* proxy;
     };
 
-    XMPPConnector* m_connector;
+    MUZZLEYConnector* m_connector;
     BusAttachment* m_bus;
+    vector<const InterfaceDescription::Member*> m_sessionlessSignals;
 };
 
-const string XMPPConnector::ALLJOYN_CODE_ADVERTISEMENT      = "__ADVERTISEMENT";
-const string XMPPConnector::ALLJOYN_CODE_ADVERT_LOST        = "__ADVERT_LOST";
-const string XMPPConnector::ALLJOYN_CODE_ANNOUNCE           = "__ANNOUNCE";
-const string XMPPConnector::ALLJOYN_CODE_METHOD_CALL        = "__METHOD_CALL";
-const string XMPPConnector::ALLJOYN_CODE_METHOD_REPLY       = "__METHOD_REPLY";
-const string XMPPConnector::ALLJOYN_CODE_SIGNAL             = "__SIGNAL";
-const string XMPPConnector::ALLJOYN_CODE_JOIN_REQUEST       = "__JOIN_REQUEST";
-const string XMPPConnector::ALLJOYN_CODE_JOIN_RESPONSE      = "__JOIN_RESPONSE";
-const string XMPPConnector::ALLJOYN_CODE_SESSION_JOINED     = "__SESSION_JOINED";
-const string XMPPConnector::ALLJOYN_CODE_SESSION_LOST       = "__SESSION_LOST";
-const string XMPPConnector::ALLJOYN_CODE_GET_PROPERTY       = "__GET_PROPERTY";
-const string XMPPConnector::ALLJOYN_CODE_GET_PROP_REPLY     = "__GET_PROP_REPLY";
-const string XMPPConnector::ALLJOYN_CODE_SET_PROPERTY       = "__SET_PROPERTY";
-const string XMPPConnector::ALLJOYN_CODE_SET_PROP_REPLY     = "__SET_PROP_REPLY";
-const string XMPPConnector::ALLJOYN_CODE_GET_ALL            = "__GET_ALL";
-const string XMPPConnector::ALLJOYN_CODE_GET_ALL_REPLY      = "__GET_ALL_REPLY";
-const string XMPPConnector::ALLJOYN_CODE_NAME_OWNER_CHANGED = "__NAME_OWNER_CHANGED";
+const string MUZZLEYConnector::ALLJOYN_CODE_ADVERTISEMENT      = "__ADVERTISEMENT";
+const string MUZZLEYConnector::ALLJOYN_CODE_ADVERT_LOST        = "__ADVERT_LOST";
+const string MUZZLEYConnector::ALLJOYN_CODE_ANNOUNCE           = "__ANNOUNCE";
+const string MUZZLEYConnector::ALLJOYN_CODE_METHOD_CALL        = "__METHOD_CALL";
+const string MUZZLEYConnector::ALLJOYN_CODE_METHOD_REPLY       = "__METHOD_REPLY";
+const string MUZZLEYConnector::ALLJOYN_CODE_SIGNAL             = "__SIGNAL";
+const string MUZZLEYConnector::ALLJOYN_CODE_JOIN_REQUEST       = "__JOIN_REQUEST";
+const string MUZZLEYConnector::ALLJOYN_CODE_JOIN_RESPONSE      = "__JOIN_RESPONSE";
+const string MUZZLEYConnector::ALLJOYN_CODE_SESSION_JOINED     = "__SESSION_JOINED";
+const string MUZZLEYConnector::ALLJOYN_CODE_SESSION_LOST       = "__SESSION_LOST";
+const string MUZZLEYConnector::ALLJOYN_CODE_GET_PROPERTY       = "__GET_PROPERTY";
+const string MUZZLEYConnector::ALLJOYN_CODE_GET_PROP_REPLY     = "__GET_PROP_REPLY";
+const string MUZZLEYConnector::ALLJOYN_CODE_SET_PROPERTY       = "__SET_PROPERTY";
+const string MUZZLEYConnector::ALLJOYN_CODE_SET_PROP_REPLY     = "__SET_PROP_REPLY";
+const string MUZZLEYConnector::ALLJOYN_CODE_GET_ALL            = "__GET_ALL";
+const string MUZZLEYConnector::ALLJOYN_CODE_GET_ALL_REPLY      = "__GET_ALL_REPLY";
+const string MUZZLEYConnector::ALLJOYN_CODE_NAME_OWNER_CHANGED = "__NAME_OWNER_CHANGED";
 
 
-XMPPConnector::XMPPConnector(
+MUZZLEYConnector::MUZZLEYConnector(
     BusAttachment*        bus,
     const string&         busInterfaceName,
     const string&         appName,
@@ -420,23 +672,110 @@ XMPPConnector::XMPPConnector(
     ) :
 #ifndef NO_AJ_GATEWAY
     GatewayConnector(bus, appName.c_str()),
-    m_manifestFilePath("/opt/alljoyn/apps/xmppconn/Manifest.xml"),
+    m_manifestFilePath("/opt/alljoyn/apps/muzzleyconn/Manifest.xml"),
 #endif // !NO_AJ_GATEWAY
     m_initialized(false),
     m_remoteAttachments(),
     m_propertyBus("propertyBus"),
     m_busInterfaceName(busInterfaceName)
 {
-    m_transport = new XmppTransport( this,
-        xmppJid, xmppPassword, xmppRoster, xmppChatroom, compress);
 
+
+    muzzley_config_manager = new MuzzleyConfigManager();
+
+    string devicekey = muzzley_config_manager->read_muzzley_devicekey_file(string(ROUTER_DEVICEKEY_PATH));
+    cout << "Readed RouterID: " << devicekey << endl << flush;
+    if(devicekey != ""){
+        routerid = devicekey;
+        muzzley_registered = true;
+        cout << "Stored RouterID: " << routerid << endl << flush;
+    }else{
+        sole::uuid u4 = sole::uuid4();
+        routerid = u4.str();
+        muzzley_registered = false;
+        muzzley_config_manager->write_muzzley_devicekey_file(string(ROUTER_DEVICEKEY_PATH), routerid);
+        cout << "Generated RouterID: " << routerid << endl << flush;
+    }
+
+    muzzley_upnp_manager = new MuzzleyUPNPManager();
+    
+
+    //Init Muzzley Connection somehow at this point...
+    //m_transport = new XmppTransport( this, xmppJid, xmppPassword, xmppRoster, xmppChatroom, compress);
+    m_transport = new MqttTransport(this);
+
+    m_transport->Subscribe(string("router/") + routerid + string("/io/i/type/alljoyn"));
+    m_transport->Subscribe(string("router/") + routerid + string("/io/i/type/upnp"));
+    m_transport->Subscribe(string("router/") + routerid + string("/io/i/type/config"));
+
+    //m_transport->Subscribe(ROUTER_RECEIVE_ALLJOYN);
+    //m_transport->Subscribe(ROUTER_RECEIVE_UPNP);
+    //m_transport->Subscribe(ROUTER_RECEIVE_CONFIG);
+
+    
     pthread_mutex_init(&m_remoteAttachmentsMutex, NULL);
 
     m_propertyBus.Start();
     m_propertyBus.Connect();
+
+    muzzley_running = true;
+    muzzley_registered = false;
+
+    Json unknown_req = Json::object {
+            { "router", routerid },
+            { "subscriptions", Json::array {} }
+        };
+    std::string unknown_req_str = unknown_req.dump();
+
+    if(!muzzley_registered){
+        std::string topic = string("router/unknown/io/o/type/config");
+        Transport::ConnectionError status = m_transport->Send(topic, unknown_req_str);
+    }else{
+        std::string topic = string("router/") + routerid + string("/io/o/type/config");
+        Transport::ConnectionError status = m_transport->Send(topic, unknown_req_str); 
+    }
+
+//JSON Parser*********************************************
+    const string simple_test = "{\"k1\":\"v1\", \"k2\":42, \"k3\":[\"a\",123,true,false,null]}";
+
+    string err;
+    auto json = Json::parse(simple_test, err);
+
+    std::cout << "k1: " << json["k1"].string_value() << "\n";
+    std::cout << "k3: " << json["k3"].dump() << "\n";
+
+
+    Json my_json = Json::object {
+        { "key1", "value1" },
+        { "key2", false },
+        { "key3", Json::array { 1, 2, 3 } },
+    };
+
+    std::string json_str = my_json.dump();
+    printf("%s\n", json_str.c_str());
+
+
+    //**********************************************************
+        
+/*    
+    //UPNP GUPNP Advertise*****************************************************
+    typedef tuple <string, string, string> component;
+    vector <component> components;
+    components.push_back(make_tuple("id", "label", "type"));
+        
+    upnp_advertiser ad = upnp_advertiser("interface", "host", 1000, "xml_filename", "xml_filepath",
+        "profileid", "friendlyname", "channelid", "macaddress", "serialnumber", "manufacturer",
+        "manufacturer_url", "modelname", "modelnumber", "modelDescription", components);
+
+    ad.loop();
+    //*************************************************************************
+*/
+
+    
+
 }
 
-XMPPConnector::~XMPPConnector()
+MUZZLEYConnector::~MUZZLEYConnector()
 {
     m_propertyBus.Disconnect();
     m_propertyBus.Stop();
@@ -463,10 +802,11 @@ XMPPConnector::~XMPPConnector()
 
     pthread_mutex_destroy(&m_remoteAttachmentsMutex);
     delete m_transport;
+    
 }
 
 QStatus
-XMPPConnector::Init()
+MUZZLEYConnector::Init()
 {
     QStatus err = ER_OK;
 
@@ -477,6 +817,7 @@ XMPPConnector::Init()
 #endif
         if(err == ER_OK)
         {
+            LOG_RELEASE("Initialized the Gateway Connector successfully."); 
             m_initialized = true;
         }
         else
@@ -490,7 +831,7 @@ XMPPConnector::Init()
 }
 
 void
-XMPPConnector::AddSessionPortMatch(
+MUZZLEYConnector::AddSessionPortMatch(
     const string& interfaceName,
     SessionPort   port
     )
@@ -498,36 +839,91 @@ XMPPConnector::AddSessionPortMatch(
     m_sessionPortMap[interfaceName].push_back(port);
 }
 
+SessionPort
+MUZZLEYConnector::GetSessionPort(
+        const string& interfaceName
+        )
+{
+    SessionPort port = 0;
+
+    // Try to find an exact match first
+    map<string, vector<SessionPort> >::const_iterator it = m_sessionPortMap.find(interfaceName);
+    if ( it != m_sessionPortMap.end() && !(it->second.empty()) )
+    {
+        port = it->second.front();
+    }
+
+    // If the exact interface name is not found, look for an interface with the same prefix
+    if (port == 0)
+    {
+        for ( it = m_sessionPortMap.begin(); it != m_sessionPortMap.end(); ++ it )
+        {
+            if ( interfaceName.find(it->first) != string::npos
+                    && !(it->second.empty()) )    //found a prefix match
+            {
+                port = it->second.front();
+            }
+        }
+    }
+
+    return port;
+}
+
 QStatus
-XMPPConnector::Start()
+MUZZLEYConnector::Start()
 {
     QStatus err = ER_OK;
-    FNLOG
+    FNLOG;
     if(!m_initialized)
     {
-        LOG_RELEASE("XMPPConnector not initialized");
+        LOG_RELEASE("MUZZLEYConnector not initialized");
         return ER_INIT_FAILED;
     }
 
 
     // Listen for messages. Blocks until transport.Stop() is called.
+
+    //After connecting to muzzley... 
+    //MUZZLEYConnector::GlobalConnectionStateChanged();
+
+    MUZZLEYConnector::RemoteSourcePresenceStateChanged("LIFX Color 1000");
+    MUZZLEYConnector::RemoteSourcePresenceStateChanged("Controlee");
+
+    std::thread upnp_thread([&] (){
+            muzzley_upnp_manager->loop();
+        });
+    upnp_thread.detach();
+    
+    //MUZZLEYConnector::LostAdvertisedName();
+
+    LOG_RELEASE("Running_ok...");
+
+    while(muzzley_running){
+        sleep(5);    
+    }
+
+    /*
     Transport::ConnectionError runerr = m_transport->Run();
     // TODO: Handle other errors
     if (runerr == Transport::auth_failure)
     {
         err = ER_AUTH_FAIL;
     }
+    */  
+      
     return err;
+        
 }
 
-void XMPPConnector::Stop()
+void MUZZLEYConnector::Stop()
 {
-    FNLOG
+    FNLOG;
+    muzzley_running = false;
     m_transport->Stop();
 }
 
 bool
-XMPPConnector::OwnsWellKnownName(
+MUZZLEYConnector::OwnsWellKnownName(
     const string& name
     )
 {
@@ -559,7 +955,7 @@ XMPPConnector::OwnsWellKnownName(
 }
 
 void
-XMPPConnector::RegisterMessageHandler(
+MUZZLEYConnector::RegisterMessageHandler(
     const string&                   key,
     MessageReceiver*                receiver,
     MessageReceiver::MessageHandler messageHandler,
@@ -578,7 +974,7 @@ XMPPConnector::RegisterMessageHandler(
 }
 
 void
-XMPPConnector::UnregisterMessageHandler(
+MUZZLEYConnector::UnregisterMessageHandler(
     const string& key
     )
 {
@@ -587,7 +983,7 @@ XMPPConnector::UnregisterMessageHandler(
 
 #ifndef NO_AJ_GATEWAY
 void
-XMPPConnector::mergedAclUpdated()
+MUZZLEYConnector::mergedAclUpdated()
 {
     LOG_DEBUG("Merged Acl updated");
     GatewayMergedAcl* mergedAcl = new GatewayMergedAcl();
@@ -599,13 +995,13 @@ XMPPConnector::mergedAclUpdated()
 }
 
 void
-XMPPConnector::shutdown()
+MUZZLEYConnector::shutdown()
 {
     Stop();
 }
 
 void
-XMPPConnector::receiveGetMergedAclAsync(
+MUZZLEYConnector::receiveGetMergedAclAsync(
     QStatus unmarshalStatus,
     GatewayMergedAcl* response
     )
@@ -620,11 +1016,138 @@ XMPPConnector::receiveGetMergedAclAsync(
 }
 #endif // !NO_AJ_GATEWAY
 
+bool
+MUZZLEYConnector::IsInterfaceKnownToAlreadyExist(
+    const string& ifaceName
+    ) const
+{
+    string buspeer("org.alljoyn.Bus.Peer");
+    return ifaceName == "org.freedesktop.DBus.Peer" || 
+          ifaceName == "org.freedesktop.DBus.Introspectable" || 
+          ifaceName == "org.freedesktop.DBus.Properties" || 
+          ifaceName == "org.allseen.Introspectable" || 
+          ifaceName == "org.alljoyn.About" || 
+          ifaceName.compare(0, buspeer.length(), buspeer) == 0;
+}
+
+
+QStatus
+MUZZLEYConnector::AddRemoteObject(
+    RemoteBusAttachment&               bus,
+    const RemoteObjectDescription&     desc,
+    map<string, vector<SessionPort> >& portsToBind
+    )
+{
+    QStatus err(ER_OK);
+    string objPath(desc.path);
+    vector<InterfaceDescriptionData> interfaces;
+
+    // Create the interfaces from the XML and build the InterfaceDescriptionData
+    // vector based on it
+    for(vector<InterfaceData>::const_iterator ifaceIter(desc.interfaces.begin());
+        ifaceIter != desc.interfaces.end(); ++ifaceIter)
+    {
+        string ifaceName = ifaceIter->name;
+        string ifaceXml  = ifaceIter->data;
+        bool   announced = ifaceIter->announced;
+
+        if ( IsInterfaceKnownToAlreadyExist(ifaceName) )
+        {
+            continue;
+        }
+
+        LOG_VERBOSE("Creating interfaces from XML:\n%s", ifaceXml.c_str());
+        err = bus.CreateInterfacesFromXml(ifaceXml.c_str());
+        if(err == ER_OK)
+        {
+            const InterfaceDescription* newInterface =
+                    bus.GetInterface(ifaceName.c_str());
+            if(newInterface)
+            {
+                InterfaceDescriptionData data;
+                data.desc = newInterface;
+                data.announced = announced;
+                interfaces.push_back(data);
+
+                // Any SessionPorts to bind?
+                map<string, vector<SessionPort> >::iterator spMapIter =
+                        m_sessionPortMap.find(ifaceName);
+                if(spMapIter != m_sessionPortMap.end())
+                {
+                    portsToBind[ifaceName] = spMapIter->second;
+                }
+            }
+            else
+            {
+                err = ER_FAIL;
+            }
+        }
+
+        if(err != ER_OK)
+        {
+            LOG_RELEASE("Failed to create InterfaceDescription %s: %s",
+                    ifaceName.c_str(), QCC_StatusText(err));
+            break;
+        }
+    }
+
+    // Add the bus object.
+    if ( !interfaces.empty() )
+    {
+        LOG_DEBUG("Adding remote bus object %s to attachment %s",
+                objPath.c_str(), bus.GetUniqueName().c_str());
+        err = bus.AddRemoteObject(objPath, interfaces);
+        if(err != ER_OK)
+        {
+            LOG_RELEASE("Failed to add remote object %s: %s", objPath.c_str(),
+                    QCC_StatusText(err));
+        }
+    }
+    else
+    {
+        LOG_DEBUG("No interface for remote object %s. Not creating bus object for attachment %s.",
+                objPath.c_str(), bus.GetUniqueName().c_str());
+    }
+
+    return err;
+}
+
+QStatus
+MUZZLEYConnector::BindSessionPorts(
+    RemoteBusAttachment& bus,
+    const map<string,vector<SessionPort> >& portsToBind
+    )
+{
+    QStatus err(ER_OK);
+    map<string, vector<SessionPort> >::const_iterator spMapIter;
+    for(spMapIter = portsToBind.begin();
+        spMapIter != portsToBind.end();
+        ++spMapIter)
+    {
+        vector<SessionPort>::const_iterator spIter;
+        for(spIter = spMapIter->second.begin();
+            spIter != spMapIter->second.end();
+            ++spIter)
+        {
+            LOG_DEBUG("Binding session port %d for interface %s",
+                    *spIter, spMapIter->first.c_str());
+            err = bus.BindSessionPort(*spIter);
+            if(err != ER_OK)
+            {
+                LOG_RELEASE("Failed to bind session port: %s",
+                        QCC_StatusText(err));
+            }
+        }
+    }
+    return ER_OK; // for now always return ER_OK
+}
+
 RemoteBusAttachment*
-XMPPConnector::GetRemoteAttachment(
+MUZZLEYConnector::GetRemoteAttachment(
     const string&                          from,
     const string&                          remoteName,
-    const vector<RemoteObjectDescription>* objects
+    const vector<RemoteObjectDescription>* objects,
+    bool                                   announcement
     )
 {
     FNLOG;
@@ -645,6 +1168,69 @@ XMPPConnector::GetRemoteAttachment(
         }
     }
 
+    if(result && announcement)
+    {
+        // This was an announcement after we've already created the RemoteBusAttachment
+        //  so add any RemoteBusObjects that are new
+        QStatus err = ER_OK;
+        for ( vector<RemoteObjectDescription>::const_iterator objIter(objects->begin());
+              objIter != objects->end(); ++objIter )
+        {
+            string objPath(objIter->path);
+            if( result->RemoteObjectExists(objPath) )
+            {
+                // For each interface in the remote bus object...
+                for(vector<InterfaceData>::const_iterator ifaceIter(objIter->interfaces.begin());
+                    ifaceIter != objIter->interfaces.end(); ++ifaceIter)
+                {
+                    // If its announce flag is true now then make sure it's announced
+                    // NOTE: It doesn't look like there's a way for us to query the announced
+                    //  state on the BusObject, so we will merely make sure it's announced if
+                    //  it's set.
+                    if(ifaceIter->announced)
+                    {
+                        string ifaceName = ifaceIter->name;
+                        const InterfaceDescription* ifaceDesc =
+                                    result->GetInterface(ifaceName.c_str());
+                        err = result->UpdateRemoteObjectAnnounceFlag(
+                                objPath, ifaceDesc, ajn::BusObject::ANNOUNCED);
+                        if(ER_OK != err)
+                        {
+                            LOG_RELEASE("Failed to update the Announce state of the %s interface for bus object %s: %s",
+                                ifaceName.c_str(), objPath.c_str(), QCC_StatusText(err));
+                            err = ER_OK; // reset the error status after logging the error
+                        }
+                    }
+                }
+
+                // NOTE: Perhaps we should also check that the interfaces don't
+                //  need to change. That is unlikely, though, since they are not allowed
+                //  to change after the bus object has been created.
+            }
+            else // The BusObject has not yet been added to the BusAttachment
+            {
+                LOG_DEBUG("Adding new remote bus object %s to attachment %s",
+                        objPath.c_str(), result->GetUniqueName().c_str());
+
+                // Add the new BusObject to the BusAttachment
+                map<string, vector<SessionPort> > portsToBind;
+                err = AddRemoteObject(*result, *objIter, portsToBind);
+
+                // Bind any necessary SessionPorts
+                if(err == ER_OK)
+                {
+                    err = BindSessionPorts( *result, portsToBind );
+                    if(ER_OK != err)
+                    {
+                        LOG_RELEASE("Problem binding session ports for BusAttachment %s: %s",
+                                result->GetUniqueName().c_str(), QCC_StatusText(err));
+                        err = ER_OK; // reset the error code after logging the error
+                    }
+                }
+            }
+        }
+    }
+
     if(!result && objects)
     {
         LOG_DEBUG("Creating new remote bus attachment: %s", remoteName.c_str());
@@ -657,61 +1243,8 @@ XMPPConnector::GetRemoteAttachment(
         vector<RemoteObjectDescription>::const_iterator objIter;
         for(objIter = objects->begin(); objIter != objects->end(); ++objIter)
         {
-            string objPath = objIter->path;
-            vector<const InterfaceDescription*> interfaces;
-
-            // Get the interface descriptions
-            map<string, string>::const_iterator ifaceIter;
-            for(ifaceIter = objIter->interfaces.begin();
-                ifaceIter != objIter->interfaces.end();
-                ++ifaceIter)
-            {
-                string ifaceName = ifaceIter->first;
-                string ifaceXml  = ifaceIter->second;
-
-                err = result->CreateInterfacesFromXml(ifaceXml.c_str());
-                if(err == ER_OK)
-                {
-                    const InterfaceDescription* newInterface =
-                            result->GetInterface(ifaceName.c_str());
-                    if(newInterface)
-                    {
-                        interfaces.push_back(newInterface);
-
-                        // Any SessionPorts to bind?
-                        map<string, vector<SessionPort> >::iterator spMapIter =
-                                m_sessionPortMap.find(ifaceName);
-                        if(spMapIter != m_sessionPortMap.end())
-                        {
-                            portsToBind[ifaceName] = spMapIter->second;
-                        }
-                    }
-                    else
-                    {
-                        err = ER_FAIL;
-                    }
-                }
-
-                if(err != ER_OK)
-                {
-                    LOG_RELEASE("Failed to create InterfaceDescription %s: %s",
-                            ifaceName.c_str(), QCC_StatusText(err));
-                    break;
-                }
-            }
-            if(err != ER_OK)
-            {
-                break;
-            }
-
-            // Add the bus object.
-            err = result->AddRemoteObject(objPath, interfaces);
-            if(err != ER_OK)
-            {
-                LOG_RELEASE("Failed to add remote object %s: %s", objPath.c_str(),
-                        QCC_StatusText(err));
-                break;
-            }
+            // Add the BusObject
+            err = AddRemoteObject(*result, *objIter, portsToBind);
         }
 
         // Start and connect the new attachment.
@@ -737,34 +1270,16 @@ XMPPConnector::GetRemoteAttachment(
         // Bind any necessary SessionPorts
         if(err == ER_OK)
         {
-            map<string, vector<SessionPort> >::iterator spMapIter;
-            for(spMapIter = portsToBind.begin();
-                spMapIter != portsToBind.end();
-                ++spMapIter)
+            err = BindSessionPorts( *result, portsToBind );
+            if(ER_OK != err)
             {
-                vector<SessionPort>::iterator spIter;
-                for(spIter = spMapIter->second.begin();
-                    spIter != spMapIter->second.end();
-                    ++spIter)
-                {
-                    LOG_DEBUG("Binding session port %d for interface %s",
-                            *spIter, spMapIter->first.c_str());
-                    err = result->BindSessionPort(*spIter);
-                    if(err != ER_OK)
-                    {
-                        LOG_RELEASE("Failed to bind session port: %s",
-                                QCC_StatusText(err));
-                        break;
-                    }
-                }
-
-                if(err != ER_OK)
-                {
-                    break;
-                }
+                LOG_RELEASE("Problem binding session ports for BusAttachment %s: %s",
+                        result->GetUniqueName().c_str(), QCC_StatusText(err));
+                err = ER_OK; // reset the error code after logging the error
             }
         }
 
+        // Add our RemoteBusAttachment to the vector
         if(err == ER_OK)
         {
             m_remoteAttachments[from].push_back(result);
@@ -781,7 +1296,7 @@ XMPPConnector::GetRemoteAttachment(
 }
 
 RemoteBusAttachment*
-XMPPConnector::GetRemoteAttachmentByAdvertisedName(
+MUZZLEYConnector::GetRemoteAttachmentByAdvertisedName(
     const string& from,
     const string& advertisedName
     )
@@ -809,7 +1324,7 @@ XMPPConnector::GetRemoteAttachmentByAdvertisedName(
     return result;
 }
 
-void XMPPConnector::DeleteRemoteAttachment(
+void MUZZLEYConnector::DeleteRemoteAttachment(
     const string&         from,
     RemoteBusAttachment*& attachment
     )
@@ -841,7 +1356,7 @@ void XMPPConnector::DeleteRemoteAttachment(
     LOG_DEBUG("Deleted remote bus attachment: %s", name.c_str());
 }
 
-BusAttachment* XMPPConnector::CreateBusAttachment(
+BusAttachment* MUZZLEYConnector::CreateBusAttachment(
     const std::string& from
     )
 {
@@ -888,7 +1403,7 @@ BusAttachment* XMPPConnector::CreateBusAttachment(
     return attachment;
 }
 
-BusAttachment* XMPPConnector::GetBusAttachment(
+BusAttachment* MUZZLEYConnector::GetBusAttachment(
     const std::string& from
     )
 {
@@ -909,11 +1424,11 @@ BusAttachment* XMPPConnector::GetBusAttachment(
 }
 
 
-void XMPPConnector::DeleteBusAttachment(
+void MUZZLEYConnector::DeleteBusAttachment(
     const std::string& from
     )
 {
-    FNLOG
+    FNLOG;
     AllJoynListener* listener = GetBusListener(from);
 
     pthread_mutex_lock(&m_remoteAttachmentsMutex);
@@ -952,7 +1467,7 @@ void XMPPConnector::DeleteBusAttachment(
 }
 
 
-AllJoynListener* XMPPConnector::GetBusListener(
+AllJoynListener* MUZZLEYConnector::GetBusListener(
     const std::string& from
     )
 {
@@ -974,11 +1489,11 @@ AllJoynListener* XMPPConnector::GetBusListener(
 }
 
 
-void XMPPConnector::DeleteBusListener(
+void MUZZLEYConnector::DeleteBusListener(
     const std::string& from
     )
 {
-    FNLOG
+    FNLOG;
     AllJoynListener* listener = GetBusListener(from);
     if (listener)
     {
@@ -989,7 +1504,7 @@ void XMPPConnector::DeleteBusListener(
 
 
 void
-XMPPConnector::NameOwnerChanged(
+MUZZLEYConnector::NameOwnerChanged(
     const char* wellKnownName,
     const char* uniqueName
     )
@@ -1010,12 +1525,12 @@ XMPPConnector::NameOwnerChanged(
 }
 
 void
-XMPPConnector::SendAdvertisement(
+MUZZLEYConnector::SendAdvertisement(
     const string&                           name,
     const vector<util::bus::BusObjectInfo>& busObjects
     )
 {
-    FNLOG
+    FNLOG;
     // Skip sending the global Alljoyn advertisements
     size_t found = name.find(ALLJOYN_URL_SUFFIX);
     if (found != string::npos)
@@ -1056,11 +1571,11 @@ XMPPConnector::SendAdvertisement(
 }
 
 void
-XMPPConnector::SendAdvertisementLost(
+MUZZLEYConnector::SendAdvertisementLost(
     const string& name
     )
 {
-    FNLOG
+    FNLOG;
     // Construct the text that will be the body of our message
     ostringstream msgStream;
     msgStream << ALLJOYN_CODE_ADVERT_LOST << "\n";
@@ -1070,7 +1585,7 @@ XMPPConnector::SendAdvertisementLost(
 }
 
 void
-XMPPConnector::SendAnnounce(
+MUZZLEYConnector::SendAnnounce(
     uint16_t                                   version,
     uint16_t                                   port,
     const string&                              busName,
@@ -1079,7 +1594,8 @@ XMPPConnector::SendAnnounce(
     const vector<util::bus::BusObjectInfo>&    busObjects
     )
 {
-    FNLOG
+    FNLOG;
+
     // Find the unique name of the announcing attachment
     string uniqueName = busName;
     map<string, string>::iterator wknIter =
@@ -1149,7 +1665,7 @@ XMPPConnector::SendAnnounce(
 }
 
 void
-XMPPConnector::SendJoinRequest(
+MUZZLEYConnector::SendJoinRequest(
     const string&                           remoteName,
     SessionPort                             sessionPort,
     const char*                             joiner,
@@ -1157,7 +1673,7 @@ XMPPConnector::SendJoinRequest(
     const vector<util::bus::BusObjectInfo>& busObjects
     )
 {
-    FNLOG
+    FNLOG;
     // Construct the text that will be the body of our message
     ostringstream msgStream;
     msgStream << ALLJOYN_CODE_JOIN_REQUEST << "\n";
@@ -1194,12 +1710,12 @@ XMPPConnector::SendJoinRequest(
 }
 
 void
-XMPPConnector::SendJoinResponse(
+MUZZLEYConnector::SendJoinResponse(
     const string& joinee,
     SessionId     sessionId
     )
 {
-    FNLOG
+    FNLOG;
     // Send the status back to the original session joiner
     ostringstream msgStream;
     msgStream << ALLJOYN_CODE_JOIN_RESPONSE << "\n";
@@ -1210,7 +1726,7 @@ XMPPConnector::SendJoinResponse(
 }
 
 void
-XMPPConnector::SendSessionJoined(
+MUZZLEYConnector::SendSessionJoined(
     const string& joiner,
     const string& joinee,
     SessionPort   port,
@@ -1218,7 +1734,7 @@ XMPPConnector::SendSessionJoined(
     SessionId     localId
     )
 {
-    FNLOG
+    FNLOG;
     // Construct the text that will be the body of our message
     ostringstream msgStream;
     msgStream << ALLJOYN_CODE_SESSION_JOINED << "\n";
@@ -1232,12 +1748,12 @@ XMPPConnector::SendSessionJoined(
 }
 
 void
-XMPPConnector::SendSessionLost(
+MUZZLEYConnector::SendSessionLost(
     const string& peer,
     SessionId     id
     )
 {
-    FNLOG
+    FNLOG;
     // Construct the text that will be the body of our message
     ostringstream msgStream;
     msgStream << ALLJOYN_CODE_SESSION_LOST << "\n";
@@ -1248,14 +1764,14 @@ XMPPConnector::SendSessionLost(
 }
 
 void
-XMPPConnector::SendMethodCall(
+MUZZLEYConnector::SendMethodCall(
     const InterfaceDescription::Member* member,
     Message&                            message,
     const string&                       busName,
     const string&                       objectPath
     )
 {
-    FNLOG
+    FNLOG;
     size_t numArgs = 0;
     const MsgArg* msgArgs = 0;
     message->GetArgs(numArgs, msgArgs);
@@ -1275,13 +1791,13 @@ XMPPConnector::SendMethodCall(
 }
 
 void
-XMPPConnector::SendMethodReply(
+MUZZLEYConnector::SendMethodReply(
     const string& destName,
     const string& destPath,
     Message&      reply
     )
 {
-    FNLOG
+    FNLOG;
     size_t numReplyArgs;
     const MsgArg* replyArgs = 0;
     reply->GetArgs(numReplyArgs, replyArgs);
@@ -1296,13 +1812,13 @@ XMPPConnector::SendMethodReply(
 }
 
 void
-XMPPConnector::SendSignal(
+MUZZLEYConnector::SendSignal(
     const InterfaceDescription::Member* member,
     const char*                         srcPath,
     Message&                            message
     )
 {
-    FNLOG
+    FNLOG;
     // Find the unique name of the signal sender
     string senderUniqueName = message->GetSender();
     map<string, string>::iterator wknIter =
@@ -1332,14 +1848,14 @@ XMPPConnector::SendSignal(
 }
 
 void
-XMPPConnector::SendGetRequest(
+MUZZLEYConnector::SendGetRequest(
     const string& ifaceName,
     const string& propName,
     const string& destName,
     const string& destPath
     )
 {
-    FNLOG
+    FNLOG;
     // Construct the text that will be the body of our message
     ostringstream msgStream;
     msgStream << ALLJOYN_CODE_GET_PROPERTY << "\n";
@@ -1352,13 +1868,13 @@ XMPPConnector::SendGetRequest(
 }
 
 void
-XMPPConnector::SendGetReply(
+MUZZLEYConnector::SendGetReply(
     const string& destName,
     const string& destPath,
     const MsgArg& replyArg
     )
 {
-    FNLOG
+    FNLOG;
     // Return the reply
     ostringstream msgStream;
     msgStream << ALLJOYN_CODE_GET_PROP_REPLY << "\n";
@@ -1370,7 +1886,7 @@ XMPPConnector::SendGetReply(
 }
 
 void
-XMPPConnector::SendSetRequest(
+MUZZLEYConnector::SendSetRequest(
     const string& ifaceName,
     const string& propName,
     const MsgArg& msgArg,
@@ -1378,7 +1894,7 @@ XMPPConnector::SendSetRequest(
     const string& destPath
     )
 {
-    FNLOG
+    FNLOG;
     // Construct the text that will be the body of our message
     ostringstream msgStream;
     msgStream << ALLJOYN_CODE_SET_PROPERTY << "\n";
@@ -1392,13 +1908,13 @@ XMPPConnector::SendSetRequest(
 }
 
 void
-XMPPConnector::SendSetReply(
+MUZZLEYConnector::SendSetReply(
     const string& destName,
     const string& destPath,
     QStatus       replyStatus
     )
 {
-    FNLOG
+    FNLOG;
     // Return the reply
     ostringstream msgStream;
     msgStream << ALLJOYN_CODE_SET_PROP_REPLY << "\n";
@@ -1410,14 +1926,14 @@ XMPPConnector::SendSetReply(
 }
 
 void
-XMPPConnector::SendGetAllRequest(
+MUZZLEYConnector::SendGetAllRequest(
     const string& ifaceName,
     const InterfaceDescription::Member* member,
     const string& destName,
     const string& destPath
     )
 {
-    FNLOG
+    FNLOG;
     // Construct the text that will be the body of our message
     ostringstream msgStream;
     msgStream << ALLJOYN_CODE_GET_ALL << "\n";
@@ -1430,13 +1946,13 @@ XMPPConnector::SendGetAllRequest(
 }
 
 void
-XMPPConnector::SendGetAllReply(
+MUZZLEYConnector::SendGetAllReply(
     const string& destName,
     const string& destPath,
     const MsgArg& replyArgs
     )
 {
-    FNLOG
+    FNLOG;
     // Construct the text that will be the body of our message
     ostringstream msgStream;
     msgStream << ALLJOYN_CODE_GET_ALL_REPLY << "\n";
@@ -1448,13 +1964,13 @@ XMPPConnector::SendGetAllReply(
 }
 
 void
-XMPPConnector::SendNameOwnerChanged(
+MUZZLEYConnector::SendNameOwnerChanged(
     const string& busName,
     const string& previousOwner,
     const string& newOwner
     )
 {
-    FNLOG
+    FNLOG;
     // Construct the text that will be the body of our message
     ostringstream msgStream;
     msgStream << ALLJOYN_CODE_NAME_OWNER_CHANGED << "\n";
@@ -1466,14 +1982,16 @@ XMPPConnector::SendNameOwnerChanged(
 }
 
 void
-XMPPConnector::SendMessage(
+MUZZLEYConnector::SendMessage(
     const string& body,
     const string& messageType
     )
 {
-    FNLOG
+    FNLOG;
     LOG_DEBUG("Sending %smessage over transport.", (messageType.empty() ? "" : (messageType+" ").c_str()));
-    Transport::ConnectionError status = m_transport->Send(body);
+    
+    Transport::ConnectionError status = m_transport->Send(string("router/") + routerid + string("/io/o/type/alljoyn"), body);
+    
     if (Transport::none != status)
     {
         LOG_RELEASE("Failed to send message, connection error %d", status);
@@ -1482,17 +2000,17 @@ XMPPConnector::SendMessage(
     }
 }
 
-vector<XMPPConnector::RemoteObjectDescription>
-XMPPConnector::ParseBusObjectInfo(
-    istringstream& msgStream
+vector<MUZZLEYConnector::RemoteObjectDescription>
+MUZZLEYConnector::ParseBusObjectInfo(
+    istringstream& msgStream,
+    map<string, vector<string> > announcedObjIfaceMap
     )
 {
-    FNLOG
-    vector<XMPPConnector::RemoteObjectDescription> results;
-    XMPPConnector::RemoteObjectDescription thisObj;
+    FNLOG;
+    vector<MUZZLEYConnector::RemoteObjectDescription> results;
+    MUZZLEYConnector::RemoteObjectDescription thisObj;
     string interfaceName = "";
     string interfaceDescription = "";
-
     string line = "";
     while(getline(msgStream, line))
     {
@@ -1501,8 +2019,22 @@ XMPPConnector::ParseBusObjectInfo(
             if(!interfaceDescription.empty())
             {
                 // We've reached the end of an interface description.
-                //util::str::UnescapeXml(interfaceDescription);
-                thisObj.interfaces[interfaceName] = interfaceDescription;
+                InterfaceData data;
+                data.name = interfaceName;
+                data.data = interfaceDescription; //util::str::UnescapeXml(interfaceDescription);
+                data.announced = false;
+                map<string, vector<string> >::const_iterator announcedObjIt(announcedObjIfaceMap.find(thisObj.path));
+                if ( announcedObjIfaceMap.end() != announcedObjIt )
+                {
+                    vector<string> announcedInterfaces(announcedObjIt->second);
+                    if ( announcedInterfaces.end() != std::find( announcedInterfaces.begin(),
+                            announcedInterfaces.end(), interfaceName) )
+                    {
+                        data.announced = true;
+                        LOG_VERBOSE("Parsed announced interface %s.", interfaceName.c_str());
+                    }
+                }
+                thisObj.interfaces.push_back(data);
 
                 interfaceName.clear();
                 interfaceDescription.clear();
@@ -1537,12 +2069,12 @@ XMPPConnector::ParseBusObjectInfo(
 }
 
 void
-XMPPConnector::ReceiveAdvertisement(
+MUZZLEYConnector::ReceiveAdvertisement(
     const string& from,
     const string& message
     )
 {
-    FNLOG
+    FNLOG;
     istringstream msgStream(message);
     string line;
 
@@ -1557,7 +2089,7 @@ XMPPConnector::ReceiveAdvertisement(
 
     LOG_DEBUG("Received remote advertisement: %s", remoteName.c_str());
 
-    vector<XMPPConnector::RemoteObjectDescription> objects =
+    vector<MUZZLEYConnector::RemoteObjectDescription> objects =
             ParseBusObjectInfo(msgStream);
     RemoteBusAttachment* bus = GetRemoteAttachment(
             from, remoteName, &objects);
@@ -1597,12 +2129,12 @@ XMPPConnector::ReceiveAdvertisement(
 }
 
 void
-XMPPConnector::ReceiveAdvertisementLost(
+MUZZLEYConnector::ReceiveAdvertisementLost(
     const string& from,
     const string& message
     )
 {
-    FNLOG
+    FNLOG;
     istringstream msgStream(message);
     string line, name;
 
@@ -1623,12 +2155,12 @@ XMPPConnector::ReceiveAdvertisementLost(
 }
 
 void
-XMPPConnector::ReceiveAnnounce(
+MUZZLEYConnector::ReceiveAnnounce(
     const string& from,
     const string& message
     )
 {
-    FNLOG
+    FNLOG;
     istringstream msgStream(message);
     string line, remoteName, versionStr, portStr, busName;
 
@@ -1645,14 +2177,14 @@ XMPPConnector::ReceiveAnnounce(
     LOG_DEBUG("Received remote announcement: %s", busName.c_str());
 
     // The object descriptions follow
-    AnnounceHandler::ObjectDescriptions objDescs;
     qcc::String objectPath = "";
-    vector<qcc::String> interfaceNames;
+    vector<string> interfaceNames;
+    map<string, vector<string> > announcedObjIfaceMap;
     while(0 != getline(msgStream, line))
     {
         if(line.empty())
         {
-            objDescs[objectPath] = interfaceNames;
+            announcedObjIfaceMap[objectPath.c_str()] = interfaceNames;
             break;
         }
 
@@ -1665,14 +2197,14 @@ XMPPConnector::ReceiveAnnounce(
             if(line[0] == '/')
             {
                 // end of the object description
-                objDescs[objectPath] = interfaceNames;
+                announcedObjIfaceMap[objectPath.c_str()] = interfaceNames;
 
                 interfaceNames.clear();
                 objectPath = line.c_str();
             }
             else
             {
-                interfaceNames.push_back(line.c_str());
+                interfaceNames.push_back(line);
 #ifndef NO_AJ_GATEWAY
                 writeInterfaceToManifest(line);
 #endif
@@ -1681,7 +2213,7 @@ XMPPConnector::ReceiveAnnounce(
     }
 
     // Then come the properties
-    AnnounceHandler::AboutData aboutData;
+    AboutData aboutData("en"); // TODO: Get the correct language information in here. Perhaps a config file setting?
     string propName = "", propDesc = "";
     while(0 != getline(msgStream, line))
     {
@@ -1693,7 +2225,7 @@ XMPPConnector::ReceiveAnnounce(
             }
 
             // reached the end of a property
-            aboutData[propName.c_str()] = util::msgarg::FromString(propDesc);
+            aboutData.SetField(propName.c_str(), util::msgarg::FromString(propDesc));
 
             propName.clear();
             propDesc.clear();
@@ -1710,12 +2242,12 @@ XMPPConnector::ReceiveAnnounce(
     }
 
     // Then the bus objects
-    vector<XMPPConnector::RemoteObjectDescription> objects =
-            ParseBusObjectInfo(msgStream);
+    vector<MUZZLEYConnector::RemoteObjectDescription> objects =
+            ParseBusObjectInfo(msgStream, announcedObjIfaceMap);
 
     // Find or create the BusAttachment with the given app name
     RemoteBusAttachment* bus =
-            GetRemoteAttachment(from, remoteName, &objects);
+            GetRemoteAttachment(from, remoteName, &objects, true);
     if(bus)
     {
         // Request and announce our name
@@ -1734,18 +2266,17 @@ XMPPConnector::ReceiveAnnounce(
                 strtoul(versionStr.c_str(), NULL, 10),
                 strtoul(portStr.c_str(), NULL, 10),
                 wkn,
-                objDescs,
                 aboutData);
     }
 }
 
 void
-XMPPConnector::ReceiveJoinRequest(
+MUZZLEYConnector::ReceiveJoinRequest(
     const string& from,
     const string& message
     )
 {
-    FNLOG
+    FNLOG;
     istringstream msgStream(message);
     string line, joiner, joinee, portStr;
 
@@ -1759,8 +2290,7 @@ XMPPConnector::ReceiveJoinRequest(
     if(0 == getline(msgStream, joiner)){ return; }
 
     // Then follow the interfaces implemented by the joiner
-    vector<XMPPConnector::RemoteObjectDescription> objects =
-            ParseBusObjectInfo(msgStream);
+    vector<MUZZLEYConnector::RemoteObjectDescription> objects = ParseBusObjectInfo(msgStream);
 
     // Get or create a bus attachment to join from
     RemoteBusAttachment* bus = GetRemoteAttachment(
@@ -1899,12 +2429,12 @@ XMPPConnector::ReceiveJoinRequest(
 }
 
 void
-XMPPConnector::ReceiveJoinResponse(
+MUZZLEYConnector::ReceiveJoinResponse(
     const string& from,
     const string& message
     )
 {
-    FNLOG
+    FNLOG;
     istringstream msgStream(message);
     string line, appName, remoteSessionId;
 
@@ -1929,12 +2459,12 @@ XMPPConnector::ReceiveJoinResponse(
 }
 
 void
-XMPPConnector::ReceiveSessionJoined(
+MUZZLEYConnector::ReceiveSessionJoined(
     const string& from,
     const string& message
     )
 {
-    FNLOG
+    FNLOG;
     istringstream msgStream(message);
     string line, joiner, joinee, portStr, remoteIdStr, localIdStr;
 
@@ -1973,12 +2503,12 @@ XMPPConnector::ReceiveSessionJoined(
 }
 
 void
-XMPPConnector::ReceiveSessionLost(
+MUZZLEYConnector::ReceiveSessionLost(
     const string& from,
     const string& message
     )
 {
-    FNLOG
+    FNLOG;
     istringstream msgStream(message);
     string line, appName, idStr;
 
@@ -2012,12 +2542,12 @@ XMPPConnector::ReceiveSessionLost(
 }
 
 void
-XMPPConnector::ReceiveMethodCall(
+MUZZLEYConnector::ReceiveMethodCall(
     const string& from,
     const string& message
     )
 {
-    FNLOG
+    FNLOG;
     // Parse the required information
     istringstream msgStream(message);
     string line, remoteName, destName, destPath,
@@ -2078,12 +2608,12 @@ XMPPConnector::ReceiveMethodCall(
 }
 
 void
-XMPPConnector::ReceiveMethodReply(
+MUZZLEYConnector::ReceiveMethodReply(
     const string& from,
     const string& message
     )
 {
-    FNLOG
+    FNLOG;
     // Parse the required information
     istringstream msgStream(message);
     string line, remoteName, objPath;
@@ -2117,12 +2647,12 @@ XMPPConnector::ReceiveMethodReply(
 }
 
 void
-XMPPConnector::ReceiveSignal(
+MUZZLEYConnector::ReceiveSignal(
     const string& from,
     const string& message
     )
 {
-    FNLOG
+    FNLOG;
     // Parse the required information
     istringstream msgStream(message);
     string line, senderName, destination,
@@ -2141,7 +2671,7 @@ XMPPConnector::ReceiveSignal(
     if(0 == getline(msgStream, ifaceMember)){ return; }
 
     // The rest is the message arguments
-    string messageArgsString = "";
+    string messageArgsString;
     while(0 != getline(msgStream, line))
     {
         messageArgsString += line + "\n";
@@ -2152,8 +2682,8 @@ XMPPConnector::ReceiveSignal(
     RemoteBusAttachment* bus = GetRemoteAttachment(from, senderName);
     if(!bus)
     {
-        LOG_RELEASE("No bus attachment to handle incoming signal. Sender: %s",
-                senderName.c_str());
+        LOG_RELEASE("No bus attachment to handle incoming signal for interface %s, member %s. Sender: %s",
+                ifaceName.c_str(), ifaceMember.c_str(), senderName.c_str());
         return;
     }
 
@@ -2161,18 +2691,22 @@ XMPPConnector::ReceiveSignal(
     vector<MsgArg> msgArgs = util::msgarg::VectorFromString(messageArgsString);
     SessionId localSessionId = bus->GetLocalSessionId(
             strtoul(remoteSessionId.c_str(), NULL, 10));
+    if(remoteSessionId == "0")
+    {
+        localSessionId = 0;
+    }
     bus->RelaySignal(
             destination, localSessionId, objectPath,
             ifaceName, ifaceMember, msgArgs);
 }
 
 void
-XMPPConnector::ReceiveGetRequest(
+MUZZLEYConnector::ReceiveGetRequest(
     const string& from,
     const string& message
     )
 {
-    FNLOG
+    FNLOG;
     // Parse the required information
     istringstream msgStream(message);
     string line, destName, destPath, ifaceName, propName;
@@ -2212,12 +2746,12 @@ XMPPConnector::ReceiveGetRequest(
 }
 
 void
-XMPPConnector::ReceiveGetReply(
+MUZZLEYConnector::ReceiveGetReply(
     const string& from,
     const string& message
     )
 {
-    FNLOG
+    FNLOG;
     // Parse the required information
     istringstream msgStream(message);
     string line, remoteName, objPath;
@@ -2250,12 +2784,12 @@ XMPPConnector::ReceiveGetReply(
 }
 
 void
-XMPPConnector::ReceiveSetRequest(
+MUZZLEYConnector::ReceiveSetRequest(
     const string& from,
     const string& message
     )
 {
-    FNLOG
+    FNLOG;
     // Parse the required information
     istringstream msgStream(message);
     string line, destName, destPath, ifaceName, propName;
@@ -2305,12 +2839,12 @@ XMPPConnector::ReceiveSetRequest(
 }
 
 void
-XMPPConnector::ReceiveSetReply(
+MUZZLEYConnector::ReceiveSetReply(
     const string& from,
     const string& message
     )
 {
-    FNLOG
+    FNLOG;
     // Parse the required information
     istringstream msgStream(message);
     string line, remoteName, objPath, status;
@@ -2336,12 +2870,12 @@ XMPPConnector::ReceiveSetReply(
 }
 
 void
-XMPPConnector::ReceiveGetAllRequest(
+MUZZLEYConnector::ReceiveGetAllRequest(
     const string& from,
     const string& message
     )
 {
-    FNLOG
+    FNLOG;
     // Parse the required information
     istringstream msgStream(message);
     string line, destName, destPath, ifaceName, memberName;
@@ -2382,12 +2916,12 @@ XMPPConnector::ReceiveGetAllRequest(
 }
 
 void
-XMPPConnector::ReceiveGetAllReply(
+MUZZLEYConnector::ReceiveGetAllReply(
     const string& from,
     const string& message
     )
 {
-    FNLOG
+    FNLOG;
     // Parse the required information
     istringstream msgStream(message);
     string line, remoteName, objPath;
@@ -2421,12 +2955,12 @@ XMPPConnector::ReceiveGetAllReply(
 
 
 void
-XMPPConnector::ReceiveNameOwnerChanged(
+MUZZLEYConnector::ReceiveNameOwnerChanged(
     const string& from,
     const string& message
     )
 {
-    FNLOG
+    FNLOG;
     // Parse the required information
     istringstream msgStream(message);
     string line, busName, previousOwner, newOwner;
@@ -2460,100 +2994,295 @@ XMPPConnector::ReceiveNameOwnerChanged(
 
 
 void
-XMPPConnector::MessageReceived(
+MUZZLEYConnector::MessageReceived(
     const string& source,
     const string& message
     )
 {
-    // Handle the content of the message
-    string typeCode =
-            message.substr(0, message.find_first_of('\n'));
-    LOG_DEBUG("Received message from transport: %s", typeCode.c_str());
+    
+    string topic_str = std::string(source);
+    std::istringstream _topic(topic_str);
+    const std::string topic(_topic.str());
 
-    if(typeCode == ALLJOYN_CODE_ADVERTISEMENT)
-    {
-        ReceiveAdvertisement(source, message);
-        LOG_DEBUG("Received Advertisement");
+    char delim='/';
+    string item;
+    vector<string> tokens;
+    
+    printf("Topic Items:\n");
+    while (getline(_topic, item, delim)) {
+        tokens.push_back(item);
+        printf("Item: %s\n", item.c_str());
     }
-    else if(typeCode == ALLJOYN_CODE_ADVERT_LOST)
-    {
-        ReceiveAdvertisementLost(source, message);
-        LOG_DEBUG("Received Lost Advertisement");
+    printf("\n");
+
+    string router;
+    string io;
+    string type;
+
+    //router/<routerid>/io/<io>/type/<type>
+    if(tokens.size()>=5){
+        router = tokens[1];
+        io = tokens[3];
+        type = tokens[5];
+    }else{
+        return;
     }
-    else if(typeCode == ALLJOYN_CODE_ANNOUNCE)
-    {
-        ReceiveAnnounce(source, message);
-        LOG_DEBUG("Received Announce");
-    }
-    else if(typeCode == ALLJOYN_CODE_METHOD_CALL)
-    {
-        ReceiveMethodCall(source, message);
-        LOG_DEBUG("Received Method Call");
-    }
-    else if(typeCode == ALLJOYN_CODE_METHOD_REPLY)
-    {
-        ReceiveMethodReply(source, message);
-        LOG_DEBUG("Received Method Reply");
-    }
-    else if(typeCode == ALLJOYN_CODE_SIGNAL)
-    {
-        ReceiveSignal(source, message);
-        LOG_DEBUG("Received Signal");
-    }
-    else if(typeCode == ALLJOYN_CODE_JOIN_REQUEST)
-    {
-        ReceiveJoinRequest(source, message);
-        LOG_DEBUG("Received Join Request");
-    }
-    else if(typeCode == ALLJOYN_CODE_JOIN_RESPONSE)
-    {
-        ReceiveJoinResponse(source, message);
-        LOG_DEBUG("Received Join Response");
-    }
-    else if(typeCode == ALLJOYN_CODE_SESSION_JOINED)
-    {
-        ReceiveSessionJoined(source, message);
-        LOG_DEBUG("Received Session Joined");
-    }
-    else if(typeCode == ALLJOYN_CODE_SESSION_LOST)
-    {
-        ReceiveSessionLost(source, message);
-        LOG_DEBUG("Received Session Lost");
-    }
-    else if(typeCode == ALLJOYN_CODE_GET_PROPERTY)
-    {
-        ReceiveGetRequest(source, message);
-        LOG_DEBUG("Received Get Request");
-    }
-    else if(typeCode == ALLJOYN_CODE_GET_PROP_REPLY)
-    {
-        ReceiveGetReply(source, message);
-        LOG_DEBUG("Received Get Reply");
-    }
-    else if(typeCode == ALLJOYN_CODE_GET_ALL)
-    {
-        ReceiveGetAllRequest(source, message);
-        LOG_DEBUG("Received Get All Requests");
-    }
-    else if(typeCode == ALLJOYN_CODE_GET_ALL_REPLY)
-    {
-        ReceiveGetAllReply(source, message);
-        LOG_DEBUG("Received Get All Reply");
-    }
-    else if(typeCode == ALLJOYN_CODE_NAME_OWNER_CHANGED)
-    {
-        ReceiveNameOwnerChanged(source, message);
-        LOG_DEBUG("Received Name Owner Changed");
-    }
-    else
-    {
-        LOG_RELEASE("Received unrecognized message type: %s",
-                typeCode.c_str());
+    
+    if(io == string("i") && type == string("alljoyn")){
+
+        // Handle the content of the message
+        string typeCode = message.substr(0, message.find_first_of('\n'));
+        LOG_DEBUG("Received message from transport: %s", typeCode.c_str());
+
+        if(typeCode == ALLJOYN_CODE_ADVERTISEMENT)
+        {
+            ReceiveAdvertisement(source, message);
+            LOG_DEBUG("Received Advertisement");
+        }
+        else if(typeCode == ALLJOYN_CODE_ADVERT_LOST)
+        {
+            ReceiveAdvertisementLost(source, message);
+            LOG_DEBUG("Received Lost Advertisement");
+        }
+        else if(typeCode == ALLJOYN_CODE_ANNOUNCE)
+        {
+            ReceiveAnnounce(source, message);
+            LOG_DEBUG("Received Announce");
+        }
+        else if(typeCode == ALLJOYN_CODE_METHOD_CALL)
+        {
+            ReceiveMethodCall(source, message);
+            LOG_DEBUG("Received Method Call");
+        }
+        else if(typeCode == ALLJOYN_CODE_METHOD_REPLY)
+        {
+            ReceiveMethodReply(source, message);
+            LOG_DEBUG("Received Method Reply");
+        }
+        else if(typeCode == ALLJOYN_CODE_SIGNAL)
+        {
+            ReceiveSignal(source, message);
+            LOG_DEBUG("Received Signal");
+        }
+        else if(typeCode == ALLJOYN_CODE_JOIN_REQUEST)
+        {
+            ReceiveJoinRequest(source, message);
+            LOG_DEBUG("Received Join Request");
+        }
+        else if(typeCode == ALLJOYN_CODE_JOIN_RESPONSE)
+        {
+            ReceiveJoinResponse(source, message);
+            LOG_DEBUG("Received Join Response");
+        }
+        else if(typeCode == ALLJOYN_CODE_SESSION_JOINED)
+        {
+            ReceiveSessionJoined(source, message);
+            LOG_DEBUG("Received Session Joined");
+        }
+        else if(typeCode == ALLJOYN_CODE_SESSION_LOST)
+        {
+            ReceiveSessionLost(source, message);
+            LOG_DEBUG("Received Session Lost");
+        }
+        else if(typeCode == ALLJOYN_CODE_GET_PROPERTY)
+        {
+            ReceiveGetRequest(source, message);
+            LOG_DEBUG("Received Get Request");
+        }
+        else if(typeCode == ALLJOYN_CODE_GET_PROP_REPLY)
+        {
+            ReceiveGetReply(source, message);
+            LOG_DEBUG("Received Get Reply");
+        }
+        else if(typeCode == ALLJOYN_CODE_SET_PROPERTY)
+        {
+            ReceiveSetRequest(source, message);
+            LOG_DEBUG("Received Set Property Request");
+        }
+        else if(typeCode == ALLJOYN_CODE_SET_PROP_REPLY)
+        {
+            ReceiveSetReply(source, message);
+            LOG_DEBUG("Received Set Property Reply");
+        }
+        else if(typeCode == ALLJOYN_CODE_GET_ALL)
+        {
+            ReceiveGetAllRequest(source, message);
+            LOG_DEBUG("Received Get All Requests");
+        }
+        else if(typeCode == ALLJOYN_CODE_GET_ALL_REPLY)
+        {
+            ReceiveGetAllReply(source, message);
+            LOG_DEBUG("Received Get All Reply");
+        }
+        else if(typeCode == ALLJOYN_CODE_NAME_OWNER_CHANGED)
+        {
+            ReceiveNameOwnerChanged(source, message);
+            LOG_DEBUG("Received Name Owner Changed");
+        }
+        else
+        {
+            LOG_RELEASE("Received unrecognized message type: %s",
+                    typeCode.c_str());
+        }
+
+    }else if(io == string("i") && type == string("upnp")){
+        cout << "Received upnp message: " << endl << message << endl << flush;
+
+        string err;
+        auto json = Json::parse(message, err);
+        auto components = json["components"];
+
+        typedef tuple <string, string, string> component_tuple;
+        vector <component_tuple> components_vector;
+       
+        if(components.array_items().size()>0){
+            for(unsigned int i=0;i<components.array_items().size();i++){
+            std::cout << "Component #:" << i << endl << flush;
+            auto component = components.array_items()[i];
+            std::cout << "Id: " << component["id"].string_value() << std::endl << std::flush;
+            std::cout << "Label: " << component["label"].string_value() << std::endl << std::flush;
+            std::cout << "Type: " << component["type"].string_value() << std::endl << std::flush;
+            components_vector.push_back(make_tuple(component["id"].string_value(),
+                                                   component["label"].string_value(),
+                                                   component["type"].string_value()));
+            }
+
+            //int port = json["port"].int_value();
+            string filepath = json["filePath"].string_value();
+            string filename = json["fileName"].string_value();
+            string deviceKey = json["deviceKey"].string_value();
+            string deviceType = json["deviceType"].string_value();
+            string friendlyName = json["friendlyName"].string_value();
+            string macAddress = json["macAddress"].string_value();
+            string manufacturer = json["manufacturer"].string_value();
+            string manufacturerURL = json["manufacturerURL"].string_value();
+            string modelDescription = json["modelDescription"].string_value();
+            string modelName = json["modelName"].string_value();
+            string modelNumber = json["modelNumber"].string_value();
+            string serialNumber = json["serialNumber"].string_value();
+            
+            //cout << "port: " << port << endl << flush;
+            cout << "filePath: " << filepath << endl << flush;
+            cout << "fileName: " << filename << endl << flush;
+            cout << "deviceKey: " << deviceKey << endl << flush;
+            cout << "deviceType: " << deviceType << endl << flush;
+            cout << "deviceName: " << friendlyName << endl << flush;
+            cout << "macAddress: " << macAddress << endl << flush;
+            cout << "manufacturer: " << manufacturer << endl << flush;
+            cout << "manufacturerURL: " << manufacturerURL << endl << flush;
+            cout << "modelDescription: " << modelDescription << endl << flush;
+            cout << "modelName: " << modelName << endl << flush;
+            cout << "modelNumber: " << modelNumber << endl << flush;
+            cout << "serialNumber: " << serialNumber << endl << flush;
+
+
+            //UPNP GUPNP Advertise*****************************************************
+            string interface = string("br-lan");
+            string host = string("10.10.100.1");
+            int port = 0;
+
+            muzzley_upnp_manager->add_muzzley_upnp_advertiser(interface, host, port, filename, filepath,
+                                                      deviceType, friendlyName, deviceKey, macAddress,
+                                                      serialNumber, manufacturer, manufacturerURL,
+                                                      modelName, modelNumber, modelDescription,
+                                                      components_vector);
+
+
+        }
+
+        
+    
+        //*************************************************************************    
+        
+
+    }else if(io == string("i") && type == string("config")){
+        cout << "Received config message: " << endl << message << endl << flush;
+        
+        string err;
+        auto json = Json::parse(message, err);
+
+        string routerid = json["router"].string_value();
+        auto subscriptions = json["subscriptions"];
+
+        if(subscriptions.array_items().size()>0){
+            for(unsigned int i=0; i<subscriptions.array_items().size(); i++){
+                std::cout << "Subscription #:" << i << endl << flush;
+                auto subscription = subscriptions.array_items()[i];
+                string profile = subscription["profile"].string_value();
+                string channel = subscription["channel"].string_value();
+                string component = subscription["component"].string_value();
+                std::cout << "New Profile: " << profile << std::endl << std::flush;
+                std::cout << "New Channel: " << channel << std::endl << std::flush;
+                std::cout << "New Component: " << component << std::endl << std::flush;
+
+
+                int muzzley_subscription_pos = muzzley_config_manager->get_muzzley_subscription_componentid_pos(component);
+                if(muzzley_subscription_pos==-1){
+                    muzzley_config_manager->add_muzzley_subscription(profile, channel, component);
+                    std::cout << "Addded Muzzley Subscription successfully!" << std::endl << std::flush;
+                }else{
+                    std::cout << "Already found the same UPNP description on pos#: " << muzzley_subscription_pos << std::endl << std::flush;
+                }
+            }
+
+            for(unsigned int j=0; j<muzzley_config_manager->get_muzzley_subscription_vector_size(); j++){
+                bool founded=false;
+                std::cout << "Stored Subscription #:" << j << endl << flush;
+                string stored_profile = muzzley_config_manager->get_muzzley_subscription_profileid(j);
+                string stored_channel = muzzley_config_manager->get_muzzley_subscription_channelid(j);
+                string stored_component = muzzley_config_manager->get_muzzley_subscription_componentid(j);
+                std::cout << "Stored Profile: " << stored_profile << std::endl << std::flush;
+                std::cout << "Stored Channel: " << stored_channel << std::endl << std::flush;
+                std::cout << "Stored Component: " << stored_component << std::endl << std::flush;
+                for(unsigned int k=0; k<subscriptions.array_items().size(); k++){
+                    std::cout << "Subscription #:" << k << endl << flush;
+                    auto subscription = subscriptions.array_items()[k];
+                    string profile = subscription["profile"].string_value();
+                    string channel = subscription["channel"].string_value();
+                    string component = subscription["component"].string_value();
+                    std::cout << "New Profile: " << profile << std::endl << std::flush;
+                    std::cout << "New Channel: " << channel << std::endl << std::flush;
+                    std::cout << "New Component: " << component << std::endl << std::flush;
+
+                    if(stored_profile==profile && stored_channel==channel && stored_component==component){
+                        std::cout << "Found the same subscription. Will keep it." << endl << flush;
+                        founded=true;
+                    }
+                }
+                if(!founded){
+                    std::cout << "Did not found the same subscription on the received array. Will delete it." << endl << flush;
+                    muzzley_config_manager->del_muzzley_subscription_pos(j);
+                    muzzley_upnp_manager->del_upnp_advertiser_profileid(stored_profile);
+                    
+                }
+            }
+
+            std::cout << "Asking Muzzley Alljoyn service for updated UPNP descriptions..." << endl << flush;
+            for(unsigned int l=0; l<muzzley_config_manager->get_muzzley_subscription_vector_size(); l++){
+                std::cout << "Stored Subscription #:" << l << endl << flush;
+                string stored_profile = muzzley_config_manager->get_muzzley_subscription_profileid(l);
+                string stored_channel = muzzley_config_manager->get_muzzley_subscription_channelid(l);
+                string stored_component = muzzley_config_manager->get_muzzley_subscription_componentid(l);
+                
+
+                Json channel_req = Json::object {
+                    { "channel", stored_channel }
+                };
+
+                std::string channel_req_str = channel_req.dump();
+              
+                std::string topic = string("router/") + routerid + string("/io/o/type/upnp");
+                Transport::ConnectionError status = m_transport->Send(topic, channel_req_str); 
+            }
+
+        }
+        muzzley_config_manager->print_muzzley_subscription_vector();
     }
 }
 
+/*
 void
-XMPPConnector::GlobalConnectionStateChanged(
+MUZZLEYConnector::GlobalConnectionStateChanged(
     const Transport::ConnectionState& new_state,
     const Transport::ConnectionError& error
     )
@@ -2586,9 +3315,11 @@ XMPPConnector::GlobalConnectionStateChanged(
     }
 
 }
+*/
 
+/*
 void
-XMPPConnector::RemoteSourcePresenceStateChanged(
+MUZZLEYConnector::RemoteSourcePresenceStateChanged(
     const std::string&                source,
     const Transport::ConnectionState& new_state,
     const Transport::ConnectionError& error
@@ -2618,7 +3349,7 @@ XMPPConnector::RemoteSourcePresenceStateChanged(
         }
 
         // Listen for announcements
-        err = AnnouncementRegistrar::RegisterAnnounceHandler(
+        err = ajn::services::AnnouncementRegistrar::RegisterAnnounceHandler(
                 *attachment, *listener, NULL, 0);
 
         if(err != ER_OK)
@@ -2656,18 +3387,89 @@ XMPPConnector::RemoteSourcePresenceStateChanged(
     }
 
 }
+*/
 
-
-void XMPPConnector::UnregisterFromAdvertisementsAndAnnouncements(const std::string& source)
+void
+MUZZLEYConnector::RemoteSourcePresenceStateChanged(
+    const std::string&                source
+    )
 {
-    FNLOG
+
+    // Create local bus attachments and listeners to begin listening and interacting with the local AllJoyn bus
+    BusAttachment* attachment = CreateBusAttachment(source);
+    AllJoynListener* listener = GetBusListener(source);
+
+    if ( !attachment || !listener )
+    {
+        LOG_RELEASE("Failed to create bus attachment or listener!");
+        return;
+    }
+
+    LOG_RELEASE("Created bus attachment: %s and bus listener: %s", source.c_str(), source.c_str());
+
+
+    // Start listening for advertisements
+    QStatus err = attachment->FindAdvertisedName("");
+    if(err != ER_OK)
+    {
+        LOG_RELEASE("Could not find advertised names for %s: %s",
+                source.c_str(),
+                QCC_StatusText(err));
+    }
+
+    LOG_RELEASE("Found advertised name for: %s: %s", source.c_str(), QCC_StatusText(err));
+
+
+    // Listen for announcements
+    err = AnnouncementRegistrar::RegisterAnnounceHandler(
+            *attachment, *listener, NULL, 0);
+
+    if(err != ER_OK)
+    {
+        LOG_RELEASE("Could not register Announcement handler for %s: %s",
+                source.c_str(),
+                QCC_StatusText(err));
+    }
+   
+    LOG_RELEASE("Registered Announcement handler successfully for: %s: %s",  source.c_str(), QCC_StatusText(err));
+
+
+    listener->FoundAdvertisedName("MuzzleyConnector");
+
+    //When it fails...
+    /*
+    // Delete all the remote bus attachments
+    pthread_mutex_lock(&m_remoteAttachmentsMutex);
+    for ( map<string, list<RemoteBusAttachment*> >::iterator connections_it(m_remoteAttachments.begin());
+        m_remoteAttachments.end() != connections_it; ++connections_it )
+    {
+        if ( connections_it->first == source )
+        {
+            for(list<RemoteBusAttachment*>::iterator it = connections_it->second.begin();
+                it != connections_it->second.end(); ++it)
+            {
+                delete(*it);
+            }
+        }
+    }
+    m_remoteAttachments.clear();
+    pthread_mutex_unlock(&m_remoteAttachmentsMutex);
+
+    DeleteBusAttachment(source);
+    */
+    
+}
+
+void MUZZLEYConnector::UnregisterFromAdvertisementsAndAnnouncements(const std::string& source)
+{
+    FNLOG;
     BusAttachment* attachment = GetBusAttachment(source);
     AllJoynListener* listener = GetBusListener(source);
 
     if (attachment && listener)
     {
         // Stop listening for advertisements and announcements
-        QStatus status = AnnouncementRegistrar::UnRegisterAllAnnounceHandlers(*attachment);
+        QStatus status = ajn::services::AnnouncementRegistrar::UnRegisterAllAnnounceHandlers(*attachment);
         if (ER_OK != status)
         {
             LOG_RELEASE("Failed to unregister announce handlers: %s", QCC_StatusText(status));
@@ -2677,7 +3479,7 @@ void XMPPConnector::UnregisterFromAdvertisementsAndAnnouncements(const std::stri
 
 
 #ifndef NO_AJ_GATEWAY
-void XMPPConnector::addInterfaceXMLTag(xmlNode* currentKey, const char* elementProp, const char* elementValue){
+void MUZZLEYConnector::addInterfaceXMLTag(xmlNode* currentKey, const char* elementProp, const char* elementValue){
     if (currentKey == NULL || currentKey->type != XML_ELEMENT_NODE || currentKey->children == NULL) {
         return;
     }
@@ -2705,7 +3507,7 @@ void XMPPConnector::addInterfaceXMLTag(xmlNode* currentKey, const char* elementP
 #endif
 
 #ifndef NO_AJ_GATEWAY
-void XMPPConnector::writeInterfaceToManifest(const std::string& interfaceName  )
+void MUZZLEYConnector::writeInterfaceToManifest(const std::string& interfaceName  )
 {
     std::ifstream ifs(m_manifestFilePath.c_str());
     std::string content((std::istreambuf_iterator<char>(ifs)),

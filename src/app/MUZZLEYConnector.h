@@ -22,21 +22,38 @@
 #endif // !NO_AJ_GATEWAY
 #include <alljoyn/BusAttachment.h>
 #include <alljoyn/BusListener.h>
+#include <alljoyn/AboutData.h>
+#include <alljoyn/about/AnnounceHandler.h>
 #include <string>
 #include <vector>
 #include <list>
 #include <map>
 #include <pthread.h>
 
-#include <alljoyn/about/AboutPropertyStoreImpl.h>
-#include <alljoyn/about/AnnouncementRegistrar.h>
+#include <vector>
+#include <stdio.h>
+#include <string>
+#include <sstream>
+
+
 #include <libxml/parser.h>
 #include <libxml/tree.h>
 #include <libxml/xmlwriter.h>
 
+//#include "transport/MQTTtransport.h"
 #include "transport/Transport.h"
-#include "common/xmppconnutil.h"
+#include "common/muzzleyconnutil.h"
 #include "common/SessionTracker.h"
+
+#include "common/MuzzleyUPNPManager.h"
+#include "common/MuzzleyConfigManager.h"
+
+#include <iostream>
+#include <iterator>
+#include <sstream>
+#include "common/json11.h"
+
+#include <curl/curl.h> 
 
 class AllJoynListener;
 class RemoteBusAttachment;
@@ -44,17 +61,27 @@ class RemoteBusListener;
 class RemoteBusObject;
 
 #ifdef NO_AJ_GATEWAY
-class XMPPConnector : public TransportListener
+class MUZZLEYConnector : public TransportListener
 #else
-class XMPPConnector : public ajn::gw::GatewayConnector, TransportListener
+class MUZZLEYConnector : public ajn::gw::GatewayConnector, TransportListener
 #endif // NO_AJ_GATEWAY
 {
     friend class AllJoynListener;
     friend class RemoteBusAttachment;
     friend class RemoteBusListener;
     friend class RemoteBusObject;
+
+    bool muzzley_running;
+    
+    string routerid;
+    bool muzzley_registered;
+    MuzzleyUPNPManager * muzzley_upnp_manager;
+    MuzzleyConfigManager * muzzley_config_manager;
+
+
+
 public:
-    XMPPConnector(
+    MUZZLEYConnector(
         ajn::BusAttachment*             bus,
         const std::string&              busInterfaceName,
         const std::string&              appName,
@@ -65,7 +92,7 @@ public:
         const bool                      compress
         );
 
-    virtual ~XMPPConnector();
+    virtual ~MUZZLEYConnector();
 
     QStatus Init();
 
@@ -83,6 +110,18 @@ public:
         ajn::SessionPort   port
         );
 
+    /**
+     *  Get a session port corresponding to a particular interface name.
+     *  If there is no exact match, try to get a port that corresponds
+     *  to a substring (prefix) of the interface.
+     *  @param[in] interfaceName  The name of the interface
+     *  @returns                  The SessionPort for that interface
+     */
+    SessionPort
+    GetSessionPort(
+            const string& interfaceName
+            );
+
     // Blocks until stop() is called, listens for XMPP
     QStatus Start();
     void Stop();
@@ -99,7 +138,7 @@ public:
     public:
         typedef
         void
-        (XMPPConnector::MessageReceiver::* MessageHandler)(
+        (MUZZLEYConnector::MessageReceiver::* MessageHandler)(
             const std::string& from,
             const std::string& key,
             const std::string& message,
@@ -110,8 +149,8 @@ public:
     void
     RegisterMessageHandler(
         const std::string&                             key,
-        XMPPConnector::MessageReceiver*                receiver,
-        XMPPConnector::MessageReceiver::MessageHandler messageHandler,
+        MUZZLEYConnector::MessageReceiver*                receiver,
+        MUZZLEYConnector::MessageReceiver::MessageHandler messageHandler,
         void*                                          userdata
         );
 
@@ -141,16 +180,35 @@ private:
 #endif
     bool m_initialized;
 
+    struct InterfaceData
+    {
+        std::string name;
+        std::string data;
+        bool        announced;
+    };
     struct RemoteObjectDescription
     {
-        std::string                        path;
-        std::map<std::string, std::string> interfaces;
+        std::string                path;
+        std::vector<InterfaceData> interfaces;
     };
+    QStatus
+    AddRemoteObject(
+        RemoteBusAttachment&                                  bus,
+        const RemoteObjectDescription&                        desc,
+        std::map<std::string,std::vector<ajn::SessionPort> >& portsToBind
+        );
+
+    QStatus
+    BindSessionPorts(
+        RemoteBusAttachment&                                        bus,
+        const std::map<std::string,std::vector<ajn::SessionPort> >& portsToBind
+        );
 
     RemoteBusAttachment* GetRemoteAttachment(
             const std::string&                          from,
             const std::string&                          remoteName,
-            const std::vector<RemoteObjectDescription>* objects = NULL
+            const std::vector<RemoteObjectDescription>* objects = NULL,
+            bool                                        announcement = false
             );
     RemoteBusAttachment* GetRemoteAttachmentByAdvertisedName(
             const std::string& from,
@@ -176,6 +234,9 @@ private:
     void DeleteBusListener(
             const std::string& from
             );
+    bool IsInterfaceKnownToAlreadyExist(
+            const std::string& ifaceName
+            ) const;
 
     std::map<std::string,ajn::BusAttachment*>   m_buses;
     std::map<std::string,AllJoynListener*>      m_listeners;
@@ -185,17 +246,17 @@ private:
 
     std::map<std::string, std::vector<ajn::SessionPort> > m_sessionPortMap;
 
-    struct MessageCallback
-    {
-        XMPPConnector::MessageReceiver*                receiver;
-        XMPPConnector::MessageReceiver::MessageHandler messageHandler;
-        void*                                          userdata;
+    struct MessageCallback{
+        MUZZLEYConnector::MessageReceiver*                receiver;
+        MUZZLEYConnector::MessageReceiver::MessageHandler messageHandler;
+        void*                                             userdata;
     };
     std::map<std::string, MessageCallback> m_messageCallbackMap;
 
     Transport* m_transport;
-
-    // Originally XmppTranport code, moved into XMPPConnector
+    //MQTTtransport* mqtt_trans;
+ 
+    // Originally XmppTranport code, moved into MUZZLEYConnector
     void
         NameOwnerChanged(
                 const char* wellKnownName,
@@ -213,12 +274,12 @@ private:
                 );
     void
         SendAnnounce(
-                uint16_t                                   version,
-                uint16_t                                   port,
-                const std::string&                         busName,
+                uint16_t                                                  version,
+                uint16_t                                                  port,
+                const std::string&                                        busName,
                 const ajn::services::AnnounceHandler::ObjectDescriptions& objectDescs,
                 const ajn::services::AnnounceHandler::AboutData&          aboutData,
-                const vector<util::bus::BusObjectInfo>&    busObjects
+                const vector<util::bus::BusObjectInfo>&                   busObjects
                 );
     void
         SendJoinRequest(
@@ -313,9 +374,10 @@ private:
                 const string& newOwner
                 );
 
-    std::vector<XMPPConnector::RemoteObjectDescription>
+    std::vector<MUZZLEYConnector::RemoteObjectDescription>
         ParseBusObjectInfo(
-                std::istringstream& msgStream
+                std::istringstream& msgStream,
+                std::map<std::string, std::vector<std::string> > announcedObjIfaceMap = std::map<std::string, std::vector<std::string> >()
                 );
 
     void ReceiveAdvertisement(const std::string& from, const std::string& message);
@@ -340,17 +402,28 @@ private:
                 const std::string& source,
                 const std::string& message
                 );
+    /*
     void
         GlobalConnectionStateChanged(
                 const Transport::ConnectionState& new_state,
                 const Transport::ConnectionError& error
                 );
+    */
+
+    /*
     void
         RemoteSourcePresenceStateChanged(
                 const std::string&                source,
                 const Transport::ConnectionState& new_state,
                 const Transport::ConnectionError& error
                 );
+    */
+
+    void
+        RemoteSourcePresenceStateChanged(
+                const std::string&                source
+                );
+
 
     void
         UnregisterFromAdvertisementsAndAnnouncements(const std::string& source);
