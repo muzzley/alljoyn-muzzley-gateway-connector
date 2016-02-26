@@ -1,12 +1,10 @@
 ## Synopsis
 
-xmppconn is an application that bridges two AllJoyn networks over XMPP. See http://allseenalliance.org for more information about AllJoyn.
+muzzleyconn is an application that connects local Alljoyn networks with Muzzley Cloud services over MQTT. See http://allseenalliance.org for more information about AllJoyn, and http://muzzley.com for more information about Muzzley.
 
 ## Motivation
 
-Normally an AllJoyn device can only communicate with other AllJoyn devices from within a local network. This application sends AllJoyn traffic over an XMPP connection to another node and effectively bridges the local AllJoyn bus the AllJoyn bus of the remote node. This allows, for instance, a mobile phone to continue to communicate with the local AllJoyn network even when not connected to the local AllJoyn network via WiFi.
-
-This application can be used to connect to any other node that does the same function. For instance, it is possible to use two instances of the program, one on each side, to bridge two AllJoyn networks. It is also possible to use this program on one side, and on the other side another program written in Java for Android that does the same thing.
+Normally an AllJoyn device can only communicate with other AllJoyn devices from within a local network. This application sends AllJoyn traffic over an MQTT connection to Muzzley cloud services. This allows, for instance, a mobile phone to continue to communicate with the local AllJoyn network even when not connected to the local AllJoyn network via WiFi.
 
 ## Building from Source
 
@@ -17,7 +15,6 @@ Building the source code requires first setting up dependencies and then using n
 The following dependencies must be obtained and installed:
 
 * libxml2
-* libstrophe
 * RapidJSON
 * AllJoyn Gateway Agent
 
@@ -27,8 +24,8 @@ First set up the environment. Make sure to change the CPU value to the correct v
     export OS=linux
     export VARIANT=release
     cd ~
-    mkdir -p xmppconn_src
-    cd xmppconn_src
+    mkdir -p muzzleyconn_src
+    cd muzzleyconn_src
     export ROOTPATH=`pwd`
 
 #### libxml2
@@ -38,21 +35,9 @@ It is necessary to install libxml2. If you're on Ubuntu you can issue the follow
     sudo apt-get update
     sudo apt-get install libxml2-dev
 
-#### libstrophe
-
-It is necessary to install libstrophe. Issue the following commands to install it:
-
-    cd $ROOTPATH
-    git clone https://github.com/strophe/libstrophe.git
-    cd libstrophe
-    ./bootstrap.sh
-    ./configure --with-libxml2 --prefix=/usr
-    make
-    sudo make install
-
 #### RapidJSON
 
-It is necessary to download the RapidJSON source code (building is not necessary since the library is header-only). Source code can be downloaded from https://github.com/miloyip/rapidjson.git. After downloading, the RAPIDJSON\_PATH environment variable must be defined before building xmppconn. For example, if your RapidJSON source code folder is RAPIDJSON\_ROOT, then RAPIDJSON\_PATH needs to point to $RAPIDJSON\_ROOT/include:
+It is necessary to download the RapidJSON source code (building is not necessary since the library is header-only). Source code can be downloaded from https://github.com/miloyip/rapidjson.git. After downloading, the RAPIDJSON\_PATH environment variable must be defined before building muzzleyconn. For example, if your RapidJSON source code folder is RAPIDJSON\_ROOT, then RAPIDJSON\_PATH needs to point to $RAPIDJSON\_ROOT/include:
 
     export RAPIDJSON_PATH=$RAPIDJSON_ROOT/include
     
@@ -85,15 +70,15 @@ Pull the source code and build the AllJoyn Gateway Agent as follows.
 
 **NOTE:** If the scons command fails then refer to http://wiki.allseenalliance.org/gateway/getting\_started for more information.
 
-#### xmppconn
+#### muzzleyconn
 
 **NOTE:** Before building, make sure that RAPIDJSON\_PATH and ALLJOYN\_DISTDIR environment variables, described above, are set appropriately.
 
-Pull the source code from the repository into the xmppconn folder under $ROOTPATH, and run "make", specifying that we are NOT building a Gateway Connector app (explained in the next section):
+Pull the source code from the repository into the muzzleyconn folder under $ROOTPATH, and run "make", specifying that we are NOT building a Gateway Connector app (explained in the next section):
 
     cd $ROOTPATH
-    git clone https://bitbucket.org/affinegy/xmppconn.git
-    cd xmppconn
+    git clone https://bitbucket.org/jorgeclaro/muzzleyconn.git
+    cd muzzleyconn
     make NO_AJ_GATEWAY=1
 
 ## Installation
@@ -111,27 +96,27 @@ When running as a normal AllJoyn application without the Gateaway Agent it is un
 
     sudo service alljoyn start
 
-Then the xmppconn application can run directly if desired:
+Then the muzzleyconn application can run directly if desired:
 
-    cd $ROOTPATH/xmppconn
-    build/xmppconn
+    cd $ROOTPATH/muzzleyconn
+    build/muzzleyconn
 
-If it is desired that xmppconn be installed do the following:
+If it is desired that muzzleyconn be installed do the following:
 
-    cd $ROOTPATH/xmppconn
-    sudo cp build/xmppconn /usr/bin/
-    sudo cp conf/xmppconn.init /etc/init.d/xmppconn
+    cd $ROOTPATH/muzzleyconn
+    sudo cp build/muzzleyconn /usr/bin/
+    sudo cp conf/muzzleyconn.init /etc/init.d/muzzleyconn
     cd /etc/rc3.d
-    sudo ln -s ../init.d/xmppconn S95xmppconn
+    sudo ln -s ../init.d/muzzleyconn S95muzzleyconn
 
 Next set up the configuration file:
 
-In the terminal navigate to the /etc/xmppconn folder and then open the xmppconn\_factory.conf file as superuser to edit it.
+In the terminal navigate to the /etc/muzzleyconn folder and then open the muzzleyconn\_factory.conf file as superuser to edit it.
 
-    sudo gedit /etc/xmppconn/xmppconn_factory.conf
+    sudo gedit /etc/muzzleyconn/muzzleyconn_factory.conf
 
 You will need to get the ProductID from the developer portal (it will be assigned when you create a new product).
-Paste the ProductID into the ProductID field in the xmppcon\_factory.conf file that you just opened.
+Paste the ProductID into the ProductID field in the muzzleyconn\_factory.conf file that you just opened.
 
 You also need a SerialNumber for your product. You can type any alphanumeric string in that field for now. But be aware that it must be a unique serial number. When you try to register more than one device with the same serial number the server will return an error. This will happen during the pairing sequence that we discuss later.
 
@@ -146,7 +131,7 @@ The file looks like the following:
      "ProductID": "Your Product ID",
      "SerialNumber": "Your Serial Number",
      "DeviceName" : "My Device Name",
-     "AppName" : "AllJoyn XMPP Connector",
+     "AppName" : "AllJoyn MQTT Connector",
      "Manufacturer" : "My Manufacturer Name",
      "ModelNumber" : "My Model Number",
      "Description" : "Description of my device",
@@ -158,56 +143,56 @@ The file looks like the following:
      "Compress":"1"
     }
 
-Save and close the file. Now copy that file to /etc/xmppconn/xmppconn.conf as follows:
+Save and close the file. Now copy that file to /etc/muzzleyconn/muzzleyconn.conf as follows:
      
-    sudo cp /etc/xmppconn/xmppconn_factory.conf /etc/xmppconn/xmppconn.conf
+    sudo cp /etc/muzzleyconn/muzzleyconn_factory.conf /etc/muzzleyconn/muzzleyconn.conf
     
-You are now ready to connect the xmppconn service with the mobile app.
+You are now ready to connect the muzzleyconn service with the mobile app.
 
-Start the XMPP connector by typing *sudo xmppconn* to see if the file is valid. If the file isn't valid, the terminal will tell you that the xmppconn.conf file is not valid. If it is running without error you can stop it by pressing Ctrl+C.
+Start the MQTT connector by typing *sudo muzzleyconn* to see if the file is valid. If the file isn't valid, the terminal will tell you that the muzzlwyconn.conf file is not valid. If it is running without error you can stop it by pressing Ctrl+C.
     
 
 ### Running as an AllJoyn Gateway Connector application
 
-The previous section described how to run xmppconn as a service via the Linux command line. You can also run it as a Gateway Connector phone app. The functionality should be the same in both cases.
+The previous section described how to run muzzleyconn as a service via the Linux command line. You can also run it as a Gateway Connector phone app. The functionality should be the same in both cases.
 
 #### Installation
 
-You need to create a directory structure for the xmppconn app:
+You need to create a directory structure for the muzzleyconn app:
 
-    sudo mkdir -p /opt/alljoyn/apps/xmppconn/acls
-    sudo mkdir -p /opt/alljoyn/apps/xmppconn/bin
-    sudo mkdir -p /opt/alljoyn/apps/xmppconn/lib
-    sudo mkdir -p /opt/alljoyn/apps/xmppconn/store
-    sudo mkdir -p /opt/alljoyn/apps/xmppconn/etc
+    sudo mkdir -p /opt/alljoyn/apps/muzzleyconn/acls
+    sudo mkdir -p /opt/alljoyn/apps/muzzleyconn/bin
+    sudo mkdir -p /opt/alljoyn/apps/muzzleyconn/lib
+    sudo mkdir -p /opt/alljoyn/apps/muzzleyconn/store
+    sudo mkdir -p /opt/alljoyn/apps/muzzleyconn/etc
 
-Under Gateway Connector, the xmppconn process will be run as "xmppconn" user. It needs to be able to write to the "etc" subdirectory. Since we created the directory structure above as root (sudo), change the owner and the group of that directory:
+Under Gateway Connector, the muzzleyconn process will be run as "muzzleyconn" user. It needs to be able to write to the "etc" subdirectory. Since we created the directory structure above as root (sudo), change the owner and the group of that directory:
 
-     sudo chown -R xmppconn /opt/alljoyn/apps/xmppconn
-     sudo chgrp -R xmppconn /opt/alljoyn/apps/xmppconn
+     sudo chown -R muzzleyconn /opt/alljoyn/apps/muzzleyconn
+     sudo chgrp -R muzzleyconn /opt/alljoyn/apps/muzzleyconn
 
-Note that in the previous section, we ran the command "make NO\_AJ\_GATEWAY=1" in the $ROOTPATH/xmppconn directory. The NO\_AJ\_GATEWAY flag means that we are building the "standalone" version of XMPP Connector. This time, we will build it without that flag:
+Note that in the previous section, we ran the command "make NO\_AJ\_GATEWAY=1" in the $ROOTPATH/muzzleyconn directory. The NO\_AJ\_GATEWAY flag means that we are building the "standalone" version of MQTT Connector. This time, we will build it without that flag:
 
-    cd $ROOTPATH/xmppconn
+    cd $ROOTPATH/muzzleyconn
     make
 
-Copy the resulting executable, to the "bin" subdirectory of xmppconn app:
+Copy the resulting executable, to the "bin" subdirectory of muzzleyconn app:
 
-    sudo cp $ROOTPATH/xmppconn/build/xmppconn /opt/alljoyn/apps/xmppconn/bin
+    sudo cp $ROOTPATH/muzzleyconn/build/muzzleyconn /opt/alljoyn/apps/muzzleyconn/bin
 
-Copy the Manifest file to the top-level xmppconn app directory:
+Copy the Manifest file to the top-level muzzleyconn app directory:
 
-    sudo cp $ROOTPATH/xmppconn/Manifest.xml /opt/alljoyn/apps/xmppconn
+    sudo cp $ROOTPATH/muzzleyconn/Manifest.xml /opt/alljoyn/apps/muzzleyconn
 
-The Manifest file has to be modified to allow the xmppconn process to be run as "xmppconn" user. Add the following line after the <env_variables> line:
+The Manifest file has to be modified to allow the muzzleyconn process to be run as "muzzleyconn" user. Add the following line after the <env_variables> line:
 
-    <variable name="HOME">/home/xmppconn</variable>
+    <variable name="HOME">/home/muzzleyconn</variable>
 
-Just like the standalone xmppconn, the Gateway Connector app needs a configuration file. Its format is the same as previously described, but you will need to place it in a different location. Copy your xmppconn_factory.conf file from the previous section to:
+Just like the standalone muzzleyconn, the Gateway Connector app needs a configuration file. Its format is the same as previously described, but you will need to place it in a different location. Copy your muzzleyconn_factory.conf file from the previous section to:
 
-    /opt/alljoyn/apps/xmppconn/etc/xmppconn_factory.conf
+    /opt/alljoyn/apps/muzzleyconn/etc/muzzleyconn_factory.conf
 
-Note that the "store" and "acls" subdirectories will remain empty for now. You are now ready to execute xmppconn as a Gateway Connector app.
+Note that the "store" and "acls" subdirectories will remain empty for now. You are now ready to execute muzzleyconn as a Gateway Connector app.
 
 #### Running the Gateway Connector
 
@@ -219,13 +204,13 @@ Verify that it is running:
 
     sudo service alljoyn-gwagent status
     
-The instructions for downloading and running the Gateway Connector app are on the AllSeen Alliance website at ["Installing the Gateway Controller Sample Android App"](https://wiki.allseenalliance.org/gateway/getting\_started#installing\_the\_gateway\_controller\_sample\_android\_app). After installing the app, open it and click on AllJoyn Gateway Configuration Manager. You should see "Affinegy XMPP Connector" (a button that says Affin...) in the Gateway Connector Applications list. At this point, the state of the app should show "Stopped". This is because we haven't created any Access Control Lists (ACL's) yet.
+The instructions for downloading and running the Gateway Connector app are on the AllSeen Alliance website at ["Installing the Gateway Controller Sample Android App"](https://wiki.allseenalliance.org/gateway/getting\_started#installing\_the\_gateway\_controller\_sample\_android\_app). After installing the app, open it and click on AllJoyn Gateway Configuration Manager. You should see "Muzzley Connector" (a button that says Affin...) in the Gateway Connector Applications list. At this point, the state of the app should show "Stopped". This is because we haven't created any Access Control Lists (ACL's) yet.
 
 #### Creating an ACL
 
-Click on the "Affin..." button to open the XMPP Connector app. Using the context menu on your Android device, click on "Create ACL". This will open up a window where you choose a name for your ACL, and choose which services will be allowed to pass through xmppconn. For now, select the "Expose all services" checkbox, since we want to ensure that the xmpconn app works just as the command-line xmppconn. Click on "Create".
+Click on the "Affin..." button to open the MQTT Connector app. Using the context menu on your Android device, click on "Create ACL". This will open up a window where you choose a name for your ACL, and choose which services will be allowed to pass through muzzleyconn. For now, select the "Expose all services" checkbox, since we want to ensure that the xmpconn app works just as the command-line muzzleyconn. Click on "Create".
 
-Go back to the previous window (the XMPP Connector app). You will see that it still shows up as "Stopped". First, you need to make sure that the newly created ACL is in the "Active" state. Then, from the Linux command line, restart the Gateway Agent:
+Go back to the previous window (the Muzzley Connector app). You will see that it still shows up as "Stopped". First, you need to make sure that the newly created ACL is in the "Active" state. Then, from the Linux command line, restart the Gateway Agent:
 
     sudo service alljoyn-gwagent restart
     
@@ -241,16 +226,14 @@ NOTE: It is possible that the Gateway Agent is not running at this point (you mi
 The Gateway Agent should now be running.
 
 
-#### Verifying the XMPP connector
+#### Verifying the MQTT connector
 
-In the Gateway Connector app, you should now see the XMPP connector status as "Running". On your Linux system, you should also be able to see it from the process list:
+In the Gateway Connector app, you should now see the MQTT connector status as "Running". On your Linux system, you should also be able to see it from the process list:
 
-    $ ps -ef | grep xmppconn
-    xmppconn 26639 26502 16 17:03 ? 00:00:12 [xmppconn]
-    alljoyn 29748 9804 0 17:04 pts/0 00:00:00 grep --color=auto xmppconn
+    $ ps -ef | grep muzzleyconn
+    muzzleyconn 26639 26502 16 17:03 ? 00:00:12 [muzzleyconn]
+    alljoyn 29748 9804 0 17:04 pts/0 00:00:00 grep --color=auto muzzleyconn
     
-You should now be able to use the xmppconn app to make devices communicate across networks, just as with the command-line version. For example, you can use CHARIOT Join to see controller-connector communication on separate networks.
-
 
 ## License
 
