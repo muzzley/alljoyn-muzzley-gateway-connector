@@ -230,10 +230,11 @@ src-git alljoyn https://git.allseenalliance.org/gerrit/core/openwrt_feed;barrier
           
 ```
 9) Make the firmware image including the correspondent configuration using the command:
-> $ make
+```
+make
+```
 
 10) Flash it in the router firmware and wait for reboot.
-
 
 #### muzzleyconn
 
