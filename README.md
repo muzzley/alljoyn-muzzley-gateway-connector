@@ -1,4 +1,4 @@
-## Synopsis
+## Muzzley-Alljoyn Gateway Connector
 
 muzzleyconn is an application that connects local Alljoyn networks with Muzzley Cloud services over MQTT. See http://allseenalliance.org for more information about AllJoyn, and http://muzzley.com for more information about Muzzley.
 
@@ -148,10 +148,12 @@ export PATH=$PATH:/usr/$TARGET/bin
 ```
 scons V=1 OS=linux CPU=x86_64 BINDINGS="cpp" WS=off SERVICES="about,notification,controlpanel,config,onboarding,sample_apps"
 ```
+
 8) Open a command terminal and from under the core/gwagent/ directory, run the command "scons" to build the lighting service framework for x86_64 target.
 ```
 scons V=1 OS=linux CPU=x86_64 BINDINGS="cpp" WS=off SERVICES="about,notification,controlpanel,config,onboarding,sample_apps"
 ```
+
 9) If needed, run the following "scons" command to clean the build files
 ```
 scons V=1 OS=linux CPU=x86_64 BINDINGS="cpp" WS=off SERVICES="about,notification,controlpanel,config,onboarding,sample_apps" -c
@@ -274,7 +276,7 @@ export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/usr/$TARGET/lib/
 export PATH=$PATH:/usr/$TARGET/bin
 ```
 
-**NOTE:** Before building, make sure that **RAPIDJSON\_INCDIR**, **LIBGLIB_INCDIR**, **LIBGLIB_LIBDIR**, **MOSQUITTO_INCDIR** and **MOSQUITTO_LIBDIR** are set appropriately, accordingly with your hardware architecture.
+**NOTE:** Before building, make sure that **TARGET**, **RAPIDJSON\_INCDIR**, **LIBGLIB_INCDIR**, **LIBGLIB_LIBDIR**, **MOSQUITTO_INCDIR** and **MOSQUITTO_LIBDIR** are set appropriately, accordingly with your hardware architecture.
 For ex.: **mips-openwrt-linux-uclibc**
 
 
@@ -289,6 +291,7 @@ Some command changes may by needed for a different architecture.
 ```
 scons V=1 ICE=off BR=on BT=off WS=off CPU=openwrt OS=openwrt BINDINGS="cpp" SERVICES="about,notification,controlpanel,config,onboarding,sample_apps" TARGET_CFLAGS="-Os -pipe -mips32r2 -mtune=74kc -fPIC -fno-caller-saves -fhonour-copts -Wno-error=unused-but-set-variable -msoft-float" "TARGET_CC=$TARGET-gcc" "TARGET_CXX=$TARGET-g++" "TARGET_AR=$TARGET-ar" "TARGET_RANLIB=$TARGET-ranlib" "TARGET_LINK=$TARGET-gcc" "TARGET_CPPFLAGS=-I$OPENWRT_TARGET_BASE/usr/include -I$OPENWRT_TARGET_BASE/include -I$OPENWRT_TOOLCHAIN_BASE/usr/include -I$OPENWRT_TOOLCHAIN_BASE/include" "TARGET_PATH=$OPENWRT_TOOLCHAIN_BASE/bin:$OPENWRT_BASE/staging_dir/host/bin:$PATH" "STAGING_DIR=$OPENWRT_TARGET_BASE" "TARGET_LINKFLAGS=-L$OPENWRT_TARGET_BASE/usr/lib" "CXXFLAGS=$CXXFLAGS -I$AJ_DIST/cpp/inc -I$AJ_DIST/about/inc -I$AJ_DIST/services_common/inc -I$AJ_DIST/notification/inc -I$AJ_DIST/controlpanel/inc -I$AJ_DIST/services_common/inc" "LDFLAGS=$LDFLAGS -L$AJ_DIST/cpp/lib -L$AJ_DIST/about/lib -L$AJ_DIST/services_common/lib -L$AJ_DIST/notification/lib -L$AJ_DIST/controlpanel/lib"
 ```
+
 2) To clean the build environment, just add a "-c" at the end of the previous command.
 ```
 scons V=1 ICE=off BR=on BT=off WS=off CPU=openwrt OS=openwrt BINDINGS="cpp" SERVICES="about,notification,controlpanel,config,onboarding,sample_apps" TARGET_CFLAGS="-Os -pipe -mips32r2 -mtune=74kc -fPIC -fno-caller-saves -fhonour-copts -Wno-error=unused-but-set-variable -msoft-float" "TARGET_CC=$TARGET-gcc" "TARGET_CXX=$TARGET-g++" "TARGET_AR=$TARGET-ar" "TARGET_RANLIB=$TARGET-ranlib" "TARGET_LINK=$TARGET-gcc" "TARGET_CPPFLAGS=-I$OPENWRT_TARGET_BASE/usr/include -I$OPENWRT_TARGET_BASE/include -I$OPENWRT_TOOLCHAIN_BASE/usr/include -I$OPENWRT_TOOLCHAIN_BASE/include" "TARGET_PATH=$OPENWRT_TOOLCHAIN_BASE/bin:$OPENWRT_BASE/staging_dir/host/bin:$PATH" "STAGING_DIR=$OPENWRT_TARGET_BASE" "TARGET_LINKFLAGS=-L$OPENWRT_TARGET_BASE/usr/lib" "CXXFLAGS=$CXXFLAGS -I$AJ_DIST/cpp/inc -I$AJ_DIST/about/inc -I$AJ_DIST/services_common/inc -I$AJ_DIST/notification/inc -I$AJ_DIST/controlpanel/inc -I$AJ_DIST/services_common/inc" "LDFLAGS=$LDFLAGS -L$AJ_DIST/cpp/lib -L$AJ_DIST/about/lib -L$AJ_DIST/services_common/lib -L$AJ_DIST/notification/lib -L$AJ_DIST/controlpanel/lib" -c
@@ -334,13 +337,15 @@ Note that the "store" and "acls" subdirectories will remain empty for now. You a
 #### Running the Gateway Connector
 
 1) Start the Gateway Agent:
+```
+sudo service alljoyn-gwagent start
+``` 
 
-    sudo service alljoyn-gwagent start
-    
 2) Verify that it is running:
+```
+sudo service alljoyn-gwagent status
+``` 
 
-    sudo service alljoyn-gwagent status
-    
 3) The instructions for downloading and running the Gateway Connector app are on the AllSeen Alliance website at ["Installing the Gateway Controller Sample Android App"](https://wiki.allseenalliance.org/gateway/getting\_started#installing\_the\_gateway\_controller\_sample\_android\_app). After installing the app, open it and click on AllJoyn Gateway Configuration Manager. You should see "Muzzley Connector" (a button that says Affin...) in the Gateway Connector Applications list. At this point, the state of the app should show "Stopped". This is because we haven't created any Access Control Lists (ACL's) yet.
 
 #### Creating an ACL
@@ -364,10 +369,11 @@ NOTE: It is possible that the Gateway Agent is not running at this point (you mi
 sudo service alljoyn restart
 sudo service alljoyn-gwagent restart
 ``` 
+
 4) The Gateway Agent should now be running.
 
 
-#### Verifying the MQTT connector
+#### Verifying the Muzzley connector
 
 In the Gateway Connector app, you should now see the MQTT connector status as "Running". On your Linux system, you should also be able to see it from the process list:
 ```
@@ -378,6 +384,7 @@ alljoyn 29748 9804 0 17:04 pts/0 00:00:00 grep --color=auto muzzleyconn
 
 ## License
 
+Copyright (c) 2016, Muzzley
 Copyright (c) 2015, Affinegy, Inc.
 
 Permission to use, copy, modify, and/or distribute this software for any purpose with or without fee is hereby granted, provided that the above copyright notice and this permission notice appear in all copies.
