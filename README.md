@@ -81,7 +81,7 @@ export LIBMOSQUITTO_LIBDIR = "/usr/lib"
 
 #Build Instructions for x86_64
 
-1) Follow the instructions in [here](https://allseenalliance.org/docs-and-downloads/documentation/configuring-build-environment-linux-platform) to set up your ubuntu machine to build AllJoyn.
+1) Follow the instructions in [here](https://allseenalliance.org/framework/documentation/develop/building/linux/build-source) to set up your ubuntu machine to build AllJoyn.
 
 2) Create a new folder named "alljoyn-muzzley" on your home directory.
 
