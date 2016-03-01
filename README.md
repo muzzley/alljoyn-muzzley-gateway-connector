@@ -10,7 +10,7 @@ This application sends AllJoyn traffic over an MQTT connection to Muzzley cloud 
 
 ## Building from Source
 
-Building the source code requires first setting up dependencies and then using scons to produce the binaries.
+Building the source code requires first setting up dependencies and then using **scons** to produce the binaries.
 
 ### Dependencies
 
@@ -149,17 +149,17 @@ export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/usr/$TARGET/lib/
 export PATH=$PATH:/usr/$TARGET/bin
 ```
 
-7) Open a command terminal and from under the core/alljoyn/ directory, run the command "scons" to build the core modules for x86_64 target.
+7) Open a command terminal and from under the core/alljoyn/ directory, run the command **scons** to build the core modules for x86_64 target.
 ```
 scons V=1 OS=linux CPU=x86_64 BINDINGS="cpp" WS=off SERVICES="about,notification,controlpanel,config,onboarding,sample_apps"
 ```
 
-8) Open a command terminal and from under the core/gwagent/ directory, run the command "scons" to build the lighting service framework for x86_64 target.
+8) Open a command terminal and from under the core/gwagent/ directory, run the command **scons** to build the lighting service framework for x86_64 target.
 ```
 scons V=1 OS=linux CPU=x86_64 BINDINGS="cpp" WS=off SERVICES="about,notification,controlpanel,config,onboarding,sample_apps"
 ```
 
-9) If needed, run the following "scons" command to clean the build files
+9) If needed, run the following **scons** command to clean the build files
 ```
 scons V=1 OS=linux CPU=x86_64 BINDINGS="cpp" WS=off SERVICES="about,notification,controlpanel,config,onboarding,sample_apps" -c
 ```
@@ -292,7 +292,7 @@ Some command changes may by needed for a different architecture.
 
 #### Compiling the connector
 
-1) To compile the connector open a new terminal window under **~/alljoyn-muzzley/core/gwagent/**, and run the following scons compile command
+1) To compile the connector open a new terminal window under **~/alljoyn-muzzley/core/gwagent/**, and run the following **scons** compile command:
 ```
 scons V=1 ICE=off BR=on BT=off WS=off CPU=openwrt OS=openwrt BINDINGS="cpp" SERVICES="about,notification,controlpanel,config,onboarding,sample_apps" TARGET_CFLAGS="-Os -pipe -mips32r2 -mtune=74kc -fPIC -fno-caller-saves -fhonour-copts -Wno-error=unused-but-set-variable -msoft-float" "TARGET_CC=$TARGET-gcc" "TARGET_CXX=$TARGET-g++" "TARGET_AR=$TARGET-ar" "TARGET_RANLIB=$TARGET-ranlib" "TARGET_LINK=$TARGET-gcc" "TARGET_CPPFLAGS=-I$OPENWRT_TARGET_BASE/usr/include -I$OPENWRT_TARGET_BASE/include -I$OPENWRT_TOOLCHAIN_BASE/usr/include -I$OPENWRT_TOOLCHAIN_BASE/include" "TARGET_PATH=$OPENWRT_TOOLCHAIN_BASE/bin:$OPENWRT_BASE/staging_dir/host/bin:$PATH" "STAGING_DIR=$OPENWRT_TARGET_BASE" "TARGET_LINKFLAGS=-L$OPENWRT_TARGET_BASE/usr/lib" "CXXFLAGS=$CXXFLAGS -I$AJ_DIST/cpp/inc -I$AJ_DIST/about/inc -I$AJ_DIST/services_common/inc -I$AJ_DIST/notification/inc -I$AJ_DIST/controlpanel/inc -I$AJ_DIST/services_common/inc" "LDFLAGS=$LDFLAGS -L$AJ_DIST/cpp/lib -L$AJ_DIST/about/lib -L$AJ_DIST/services_common/lib -L$AJ_DIST/notification/lib -L$AJ_DIST/controlpanel/lib"
 ```
