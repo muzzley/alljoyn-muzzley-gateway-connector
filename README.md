@@ -174,7 +174,7 @@ scons V=1 OS=linux CPU=x86_64 BINDINGS="cpp" WS=off SERVICES="about,notification
 git clone git://git.openwrt.org/14.07/openwrt.git
 ```
 
-2) Download the config file for the correspondent hardware where the OpenWRT will be run from [here](https://downloads.openwrt.org/barrier_breaker/14.07/) and paste it on the root of the openwrt project.
+2) Download the config file for the correspondent hardware where the OpenWRT will be run from [here](https://downloads.openwrt.org) and paste it on the root of the openwrt project.
 
 3) Copy downloaded config file to .config (for example):
 ```
