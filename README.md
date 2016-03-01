@@ -24,6 +24,7 @@ The following dependencies must be obtained and installed:
 * libcrypto-dev
 * mosquitto-dev
 * RapidJSON
+
 * AllJoyn Gateway Agent
 * Alljoyn Core
 
@@ -67,42 +68,143 @@ It is necessary to download the RapidJSON source code (building is not necessary
 
 	export LIBMOSQUITTO_INCDIR = "/usr/mips-openwrt-linux-uclibc/include"
 	export LIBMOSQUITTO_LIBDIR = "/usr/mips-openwrt-linux-uclibc/lib"
-	
 
-#### AllJoyn Gateway Agent
 
-Pull the source code and build the AllJoyn Gateway Agent as follows. 
+#Build Instructions for x86_64
 
-    cd $ROOTPATH
-    mkdir -p alljoyn_src/core alljoyn_src/services alljoyn_src/gateway
-    cd alljoyn_src/core
-    git clone https://git.allseenalliance.org/gerrit/core/alljoyn
-    cd alljoyn
-    git checkout RB14.12b
-    cd $ROOTPATH/alljoyn_src/services
-    git clone https://git.allseenalliance.org/gerrit/services/base
-    cd base
-    git checkout RB14.12
-    cd $ROOTPATH/alljoyn_src/gateway
-    git clone https://git.allseenalliance.org/gerrit/gateway/gwagent
-    cd gwagent
-    git checkout RB14.12
-    export GWAGENT_SRC_DIR=`pwd`
-    unset ALLJOYN_DISTDIR
-    export VARIANT=debug
-    scons V=1 OS=$OS CPU=$CPU BINDINGS=cpp VARIANT=$VARIANT WS=off POLICYDB=on
-    export ALLJOYN_DISTDIR=$GWAGENT_SRC_DIR/build/linux/$CPU/$VARIANT/dist
-    mkdir -p $ROOTPATH/build/lib
-    find $ALLJOYN_DISTDIR -name "*\.so" -exec cp {} $ROOTPATH/build/lib/ \;
-    export LD_LIBRARY_PATH=$ROOTPATH/build/lib
+1) Follow the instructions in [here](https://allseenalliance.org/docs-and-downloads/documentation/configuring-build-environment-linux-platform) to set up your ubuntu machine to build AllJoyn.
 
-**NOTE:** If the scons command fails then refer to http://wiki.allseenalliance.org/gateway/getting\_started for more information.
+2) Create a new folder named "alljoyn-muzzley" on your home directory.
+
+3) Use the "alljoyn-muzzley" folder as your workspace and create the following directory structure to setup your environment.
+
+```
+core/
+
+    gwagent/   (https://git.allseenalliance.org/gerrit/gateway/gwagent.git)
+     		   (git checkout RB14.12b)
+
+	ajtcl/   (https://git.allseenalliance.org/gerrit/core/ajtcl.git)
+
+	alljoyn/ (https://git.allseenalliance.org/gerrit/core/alljoyn.git)
+			 (git checkout RB14.12b)
+
+base_tcl/ (https://git.allseenalliance.org/gerrit/services/base_tcl.git)
+
+base/ (https://git.allseenalliance.org/gerrit/services/base.git)
+	  (git checkout RB14.12b)
+
+services/
+
+       base_tcl/ (https://git.allseenalliance.org/gerrit/services/base_tcl.git)
+       (git checkout RB14.12b)
+
+       base/ (https://git.allseenalliance.org/gerrit/services/base.git)
+       (git checkout RB14.12b)
+
+```
+
+4)  Open a command terminal and from under the core/gwagent/cpp directory, clone this repository.
+
+5) Rename connetor folder for a more friendly name like "MuzzleyConnecor", and open the SConscript file under the core/gwagent/cpp directory, and add the same folder name to the array **gateway_dirs**.
+
+6) Open a command terminal and from under the core/alljoyn/ directory, run the command "scons" to build the core modules for x86_64 target.
+
+> $ scons V=1 OS=linux CPU=x86_64 BINDINGS="cpp" WS=off SERVICES="about,notification,controlpanel,config,onboarding,sample_apps"
+
+7) Open a command terminal and from under the core/gwagent/ directory, run the command "scons" to build the lighting service framework for x86_64 target.
+
+> $ scons V=1 OS=linux CPU=x86_64 BINDINGS="cpp" WS=off SERVICES="about,notification,controlpanel,config,onboarding,sample_apps"
+
+8) If needed, run the following "scons" command to clean the build files
+
+> $ scons V=1 OS=linux CPU=x86_64 BINDINGS="cpp" WS=off SERVICES="about,notification,controlpanel,config,onboarding,sample_apps" -c
+
+
+
+#Build Instructions for OpenWRT
+
+Prepare the OpenWRT Toolchain 
+
+1) Download the OpenWRT source code from: 
+
+> $ git clone git://git.openwrt.org/14.07/openwrt.git
+
+2) Download the config file for the correspondent hardware where the OpenWRT will be run from [here](https://downloads.openwrt.org/barrier_breaker/14.07/) and paste it on the root of the openwrt project.
+
+3) Copy downloaded config file to .config (for example):
+
+> $ cp config.ar71xx_generic .config
+
+4) Copy feeds.conf.default to feeds.conf (if not already done):
+
+> $ cp feeds.conf.default feeds.conf
+
+5) Add the following line to the end of the file:
+```
+src-git alljoyn https://git.allseenalliance.org/gerrit/core/openwrt_feed;barrier_breaker
+
+```
+
+6) Update the feed information:
+
+> $ ./scripts/feeds update -a
+
+    
+7) Add the the packages from the feeds to build system (luci interface is not needed but recommended to configure the router using a web interface):
+
+> $ ./scripts/feeds install -a -p alljoyn
+
+> $ ./scripts/feeds install libgupnp
+
+> $ ./scripts/feeds install libgssdp
+
+> $ ./scripts/feeds install -a -p luci
+
+8) Enable AllJoyn in the build:
+
+> $ make menuconfig
+
+```
+     Networking --->
+          < > alljoyn --->
+               < > alljoyn-about
+               < > alljoyn-c
+               < > alljoyn-config
+                    < > alljoyn-config-samples
+               < > alljoyn-controlpanel
+                    < > alljoyn-controlpanel-samples
+               < > alljoyn-notification
+                    < > alljoyn-notification-samples
+               < > alljoyn-onboarding
+                    < > alljoyn-onboarding-samples
+               < > alljoyn-sample_apps
+               < > alljoyn-samples
+               < > alljoyn-service_common
+     LuCI --->
+          < > Collections --->
+               < > luci     
+          < > Themes --->
+               < > luci-themes-openwrt
+     Libraries --->
+          < > libxml2
+          < > libgupnp
+          < > libgssdp
+          
+```
+9) Make the firmware image including the correspondent configuration using the command:
+> $ make
+
+10) Flash it in the router firmware and wait for reboot.
+
 
 #### muzzleyconn
 
+
+
 **NOTE:** Before building, make sure that RAPIDJSON\_PATH and ALLJOYN\_DISTDIR environment variables, described above, are set appropriately.
 
-Pull the source code from the repository into the muzzleyconn folder under $ROOTPATH, and run "make", specifying that we are NOT building a Gateway Connector app (explained in the next section):
+Pull the source code from the repository into the muzzleyconn folder under $ROOTPATH, and run "make", specifying that we are NOT bulding a Gateway Connector app (explained in the next section):
 
     cd $ROOTPATH
     git clone https://bitbucket.org/jorgeclaro/muzzleyconn.git
