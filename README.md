@@ -28,54 +28,55 @@ The following dependencies must be obtained and installed:
 * Alljoyn Core
 
 #### libcap
-
-  sudo apt-get install libcap-dev
+```
+sudo apt-get install libcap-dev
+```
 
 #### libxml2
-
-  sudo apt-get update
-  sudo apt-get install libxml2-dev
-
-  export LIBXML2_INCDIR = "/usr/include/libxml2"
-	export LIBXML2_LIBDIR = "/usr/lib"
+```
+sudo apt-get update
+sudo apt-get install libxml2-dev
+export LIBXML2_INCDIR = "/usr/include/libxml2"
+export LIBXML2_LIBDIR = "/usr/lib"
+```
 
 #### libGlib
- 	
-  sudo apt-get install libglib2.0-dev 
-
- 	export LIBGLIB_INCDIR = "/usr/include/glib-2.0"
-	export LIBGLIB_LIBDIR = "/usr/mips-openwrt-linux-uclibc/lib"
+```
+sudo apt-get install libglib2.0-dev 
+export LIBGLIB_INCDIR = "/usr/include/glib-2.0"
+export LIBGLIB_LIBDIR = "/usr/mips-openwrt-linux-uclibc/lib"
+```
 
 #### libSoup
- 	
-  sudo apt-get install libsoup2.4-dev 
-
- 	export LIBSOUP_INCDIR = "/usr/include/libsoup-2.4"
+```	
+sudo apt-get install libsoup2.4-dev
+export LIBSOUP_INCDIR = "/usr/include/libsoup-2.4"
+```
 
 #### libGupnp
+```
+sudo apt-get install libgupnp-1.0-dev
+export LIBGUPNP_INCDIR = "/usr/include/gupnp-1.0"
+```
 
-  sudo apt-get install libgupnp-1.0-dev 
-
- 	export LIBGUPNP_INCDIR = "/usr/include/gupnp-1.0"
-	
 #### libGssdp
+```
+sudo apt-get install libgssdp-1.0-dev
+export LIBGSSDP_INCDIR = /usr/include/gssdp-1.0
+```	
 
-  sudo apt-get install libgssdp-1.0-dev 
- 	
- 	export LIBGSSDP_INCDIR = /usr/include/gssdp-1.0
-	
 #### RapidJSON
 
 It is necessary to download the RapidJSON source code (building is not necessary since the library is header-only). Source code can be downloaded from https://github.com/miloyip/rapidjson.git. After downloading, the RAPIDJSON\_INCDIR environment variable must be defined before building muzzleyconn. For example, if your RapidJSON source code folder is RAPIDJSON\_ROOT, then RAPIDJSON\_INCDIR needs to point to $RAPIDJSON\_ROOT/include:
 
-    export RAPIDJSON_INCDIR = $RAPIDJSON_ROOT/include
-    
+```
+export RAPIDJSON_INCDIR = $RAPIDJSON_ROOT/include
+```
 #### Mosquitto
 
-  sudo apt-get install mosquitto-dev 
-
-	export LIBMOSQUITTO_INCDIR = "/usr/mips-openwrt-linux-uclibc/include"
-	export LIBMOSQUITTO_LIBDIR = "/usr/mips-openwrt-linux-uclibc/lib"
+  sudo apt-get install mosquitto-dev
+  export LIBMOSQUITTO_INCDIR = "/usr/mips-openwrt-linux-uclibc/include"
+  export LIBMOSQUITTO_LIBDIR = "/usr/mips-openwrt-linux-uclibc/lib"
 
 
 #Build Instructions for x86_64
