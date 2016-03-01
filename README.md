@@ -385,6 +385,7 @@ alljoyn 29748 9804 0 17:04 pts/0 00:00:00 grep --color=auto muzzleyconn
 ## License
 
 Copyright (c) 2016, Muzzley
+
 Copyright (c) 2015, Affinegy, Inc.
 
 Permission to use, copy, modify, and/or distribute this software for any purpose with or without fee is hereby granted, provided that the above copyright notice and this permission notice appear in all copies.
