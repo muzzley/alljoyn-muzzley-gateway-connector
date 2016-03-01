@@ -1,10 +1,12 @@
 ## Muzzley-Alljoyn Gateway Connector
 
-muzzleyconn is an application that connects local Alljoyn networks with Muzzley Cloud services over MQTT. See http://allseenalliance.org for more information about AllJoyn, and http://muzzley.com for more information about Muzzley.
+muzzleyconn is an application that connects local Alljoyn networks with Muzzley Cloud services over MQTT.
+See http://allseenalliance.org for more information about AllJoyn, and http://muzzley.com for more information about Muzzley.
 
 ## Motivation
 
-Normally an AllJoyn device can only communicate with other AllJoyn devices from within a local network. This application sends AllJoyn traffic over an MQTT connection to Muzzley cloud services, and announce Muzzley compatible alljoyn devices over UPNP. This allows, for instance, a mobile phone running the Muzzley App to add those devices to the users Muzzley account, and continue to communicate with those devices even when not connected to the local AllJoyn network via WiFi.
+Normally an AllJoyn device can only communicate with other AllJoyn devices from within a local network.
+This application sends AllJoyn traffic over an MQTT connection to Muzzley cloud services, and announce Muzzley compatible alljoyn devices over UPNP. This allows, for instance, a mobile phone running the Muzzley App to add those devices to the users Muzzley account, and continue to communicate with those devices even when not connected to the local AllJoyn network via WiFi.
 
 ## Building from Source
 
@@ -67,7 +69,10 @@ export LIBGSSDP_INCDIR = /usr/include/gssdp-1.0
 
 #### RapidJSON
 
-It is necessary to download the RapidJSON source code (building is not necessary since the library is header-only). Source code can be downloaded from https://github.com/miloyip/rapidjson.git. After downloading, the RAPIDJSON\_INCDIR environment variable must be defined before building muzzleyconn. For example, if your RapidJSON source code folder is RAPIDJSON\_ROOT, then RAPIDJSON\_INCDIR needs to point to $RAPIDJSON\_ROOT/include:
+It is necessary to download the RapidJSON source code (building is not necessary since the library is header-only).
+Source code can be downloaded from https://github.com/miloyip/rapidjson.git.
+After downloading, the RAPIDJSON\_INCDIR environment variable must be defined before building muzzleyconn.
+For example, if your RapidJSON source code folder is RAPIDJSON\_ROOT, then RAPIDJSON\_INCDIR needs to point to $RAPIDJSON\_ROOT/include:
 ```
 export RAPIDJSON_INCDIR = $RAPIDJSON_ROOT/include
 ```
