@@ -199,8 +199,9 @@ src-git alljoyn https://git.allseenalliance.org/gerrit/core/openwrt_feed;barrier
 ```
 
 8) Enable AllJoyn in the build:
-
-> $ make menuconfig
+```
+make menuconfig
+```
 
 ```
      Networking --->
@@ -229,6 +230,7 @@ src-git alljoyn https://git.allseenalliance.org/gerrit/core/openwrt_feed;barrier
           < > libgssdp
           
 ```
+
 9) Make the firmware image including the correspondent configuration using the command:
 ```
 make
