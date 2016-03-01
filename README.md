@@ -4,43 +4,71 @@ muzzleyconn is an application that connects local Alljoyn networks with Muzzley 
 
 ## Motivation
 
-Normally an AllJoyn device can only communicate with other AllJoyn devices from within a local network. This application sends AllJoyn traffic over an MQTT connection to Muzzley cloud services. This allows, for instance, a mobile phone to continue to communicate with the local AllJoyn network even when not connected to the local AllJoyn network via WiFi.
+Normally an AllJoyn device can only communicate with other AllJoyn devices from within a local network. This application sends AllJoyn traffic over an MQTT connection to Muzzley cloud services, and announce Muzzley compatible alljoyn devices over UPNP. This allows, for instance, a mobile phone running the Muzzley App to add those devices to the users Muzzley account, and continue to communicate with those devices even when not connected to the local AllJoyn network via WiFi.
 
 ## Building from Source
 
-Building the source code requires first setting up dependencies and then using normal gnu make to produce the binaries.
+Building the source code requires first setting up dependencies and then using scons to produce the binaries.
 
 ### Dependencies
 
 The following dependencies must be obtained and installed:
 
-* libxml2
+* libcap-dev
+* libsoup-dev
+* libxml2-dev
+* libgupnp-1.0-dev
+* libgssdp-1.0-dev
+* libglib2.0-dev
+* libssl-dev
+* libcrypto-dev
+* mosquitto-dev
 * RapidJSON
 * AllJoyn Gateway Agent
+* Alljoyn Core
 
-First set up the environment. Make sure to change the CPU value to the correct value for your system (e.g. x86\_64, arm, etc.). Also set the OS to the correct value if necessary.
 
-    export CPU=x86
-    export OS=linux
-    export VARIANT=release
-    cd ~
-    mkdir -p muzzleyconn_src
-    cd muzzleyconn_src
-    export ROOTPATH=`pwd`
+#### libcap
+
 
 #### libxml2
-
-It is necessary to install libxml2. If you're on Ubuntu you can issue the following commands to install it:
 
     sudo apt-get update
     sudo apt-get install libxml2-dev
 
+    export LIBXML2_INCDIR = "/usr/include/libxml2"
+	export LIBXML2_LIBDIR = "/usr/lib"
+
+#### libGlib
+ 	
+ 	export LIBGLIB_INCDIR = "/usr/include/glib-2.0"
+	export LIBGLIB_LIBDIR = "/usr/mips-openwrt-linux-uclibc/lib"
+
+#### libSoup
+ 	
+ 	export LIBSOUP_INCDIR = "/usr/include/libsoup-2.4"
+
+#### libGupnp
+ 	
+ 	export LIBGUPNP_INCDIR = "/usr/include/gupnp-1.0"
+	
+#### libGssdp
+ 	
+ 	export LIBGSSDP_INCDIR = /usr/include/gssdp-1.0
+	
+
 #### RapidJSON
 
-It is necessary to download the RapidJSON source code (building is not necessary since the library is header-only). Source code can be downloaded from https://github.com/miloyip/rapidjson.git. After downloading, the RAPIDJSON\_PATH environment variable must be defined before building muzzleyconn. For example, if your RapidJSON source code folder is RAPIDJSON\_ROOT, then RAPIDJSON\_PATH needs to point to $RAPIDJSON\_ROOT/include:
+It is necessary to download the RapidJSON source code (building is not necessary since the library is header-only). Source code can be downloaded from https://github.com/miloyip/rapidjson.git. After downloading, the RAPIDJSON\_INCDIR environment variable must be defined before building muzzleyconn. For example, if your RapidJSON source code folder is RAPIDJSON\_ROOT, then RAPIDJSON\_INCDIR needs to point to $RAPIDJSON\_ROOT/include:
 
-    export RAPIDJSON_PATH=$RAPIDJSON_ROOT/include
+    export RAPIDJSON_INCDIR = $RAPIDJSON_ROOT/include
     
+#### Mosquitto
+
+	export LIBMOSQUITTO_INCDIR = "/usr/mips-openwrt-linux-uclibc/include"
+	export LIBMOSQUITTO_LIBDIR = "/usr/mips-openwrt-linux-uclibc/lib"
+	
+
 #### AllJoyn Gateway Agent
 
 Pull the source code and build the AllJoyn Gateway Agent as follows. 
