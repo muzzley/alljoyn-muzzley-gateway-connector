@@ -68,16 +68,16 @@ export LIBGSSDP_INCDIR = /usr/include/gssdp-1.0
 #### RapidJSON
 
 It is necessary to download the RapidJSON source code (building is not necessary since the library is header-only). Source code can be downloaded from https://github.com/miloyip/rapidjson.git. After downloading, the RAPIDJSON\_INCDIR environment variable must be defined before building muzzleyconn. For example, if your RapidJSON source code folder is RAPIDJSON\_ROOT, then RAPIDJSON\_INCDIR needs to point to $RAPIDJSON\_ROOT/include:
-
 ```
 export RAPIDJSON_INCDIR = $RAPIDJSON_ROOT/include
 ```
+
 #### Mosquitto
-
-  sudo apt-get install mosquitto-dev
-  export LIBMOSQUITTO_INCDIR = "/usr/mips-openwrt-linux-uclibc/include"
-  export LIBMOSQUITTO_LIBDIR = "/usr/mips-openwrt-linux-uclibc/lib"
-
+```
+sudo apt-get install mosquitto-dev
+export LIBMOSQUITTO_INCDIR = "/usr/mips-openwrt-linux-uclibc/include"
+export LIBMOSQUITTO_LIBDIR = "/usr/mips-openwrt-linux-uclibc/lib"
+```
 
 #Build Instructions for x86_64
 
