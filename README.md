@@ -163,18 +163,21 @@ scons V=1 OS=linux CPU=x86_64 BINDINGS="cpp" WS=off SERVICES="about,notification
 #### Prepare the OpenWRT Toolchain 
 
 1) Download the OpenWRT source code from: 
-
-> $ git clone git://git.openwrt.org/14.07/openwrt.git
+```
+git clone git://git.openwrt.org/14.07/openwrt.git
+```
 
 2) Download the config file for the correspondent hardware where the OpenWRT will be run from [here](https://downloads.openwrt.org/barrier_breaker/14.07/) and paste it on the root of the openwrt project.
 
 3) Copy downloaded config file to .config (for example):
-
-> $ cp config.ar71xx_generic .config
+```
+cp config.ar71xx_generic .config
+```
 
 4) Copy feeds.conf.default to feeds.conf (if not already done):
-
-> $ cp feeds.conf.default feeds.conf
+```
+cp feeds.conf.default feeds.conf
+```
 
 5) Add the following line to the end of the file:
 ```
