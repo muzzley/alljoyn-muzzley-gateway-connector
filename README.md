@@ -117,6 +117,33 @@ services/
 
 5) Rename connetor folder for a more friendly name like "MuzzleyConnecor", and open the SConscript file under the core/gwagent/cpp directory, and add the same folder name to the array **gateway_dirs**.
 
+```
+export TARGET_OS="linux"
+export TARGET_CPU="x86_64"
+export TARGET=
+export VARIANT=debug
+export AJ_ROOT="$HOME/alljoyn-connector-legacy"
+export GWAGENT_SRC_DIR=$AJ_ROOT/core/gwagent
+export ALLJOYN_DISTDIR=$GWAGENT_SRC_DIR/build/$TARGET_OS/$TARGET_CPU/$VARIANT/dist
+export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$AJ_ROOT/core/alljoyn/build/$TARGET_OS/$TARGET_CPU/$VARIANT/dist/cpp/lib/
+export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$AJ_ROOT/core/alljoyn/build/$TARGET_OS/$TARGET_CPU/$VARIANT/dist/config/lib/
+export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$AJ_ROOT/core/alljoyn/build/$TARGET_OS/$TARGET_CPU/$VARIANT/dist/controlpanel/lib/
+export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$AJ_ROOT/core/alljoyn/build/$TARGET_OS/$TARGET_CPU/$VARIANT/dist/notification/lib/
+export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$AJ_ROOT/core/alljoyn/build/$TARGET_OS/$TARGET_CPU/$VARIANT/dist/services_common/lib/
+export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$AJ_ROOT/core/gwagent/build/$TARGET_OS/$TARGET_CPU/$VARIANT/dist/cpp/lib/
+export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$AJ_ROOT/core/gwagent/build/$TARGET_OS/$TARGET_CPU/$VARIANT/dist/config/lib/
+export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$AJ_ROOT/core/gwagent/build/$TARGET_OS/$TARGET_CPU/$VARIANT/dist/controlpanel/lib/
+export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$AJ_ROOT/core/gwagent/build/$TARGET_OS/$TARGET_CPU/$VARIANT/dist/notification/lib/
+export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$AJ_ROOT/core/gwagent/build/$TARGET_OS/$TARGET_CPU/$VARIANT/dist/services_common/lib/
+export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$AJ_ROOT/core/gwagent/build/$TARGET_OS/$TARGET_CPU/$VARIANT/dist/services_common/lib/
+export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$AJ_ROOT/core/gwagent/build/$TARGET_OS/$TARGET_CPU/$VARIANT/dist/gatewayMgmtApp/lib/
+export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$AJ_ROOT/core/gwagent/build/$TARGET_OS/$TARGET_CPU/$VARIANT/dist/gatewayController/lib/
+export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$AJ_ROOT/core/gwagent/build/$TARGET_OS/$TARGET_CPU/$VARIANT/dist/gatewayConnector/lib/
+export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/usr/$TARGET/lib/
+export PATH=$PATH:/usr/$TARGET/bin
+```
+
+
 6) Open a command terminal and from under the core/alljoyn/ directory, run the command "scons" to build the core modules for x86_64 target.
 
 > $ scons V=1 OS=linux CPU=x86_64 BINDINGS="cpp" WS=off SERVICES="about,notification,controlpanel,config,onboarding,sample_apps"
@@ -209,9 +236,41 @@ src-git alljoyn https://git.allseenalliance.org/gerrit/core/openwrt_feed;barrier
 
 #### muzzleyconn
 
+```
+export TARGET_OS="openwrt"
+export TARGET_CPU="openwrt"
+export TARGET=mips-openwrt-linux-uclibc
+export VARIANT=debug
+export AJ_ROOT="$HOME/muzzley-alljoyn"
+export AJ_DIST="$AJ_ROOT/core/alljoyn/build/$TARGET_OS/$TARGET_CPU/debug/dist"
+export GWAGENT_SRC_DIR=$AJ_ROOT/core/gwagent
+export ALLJOYN_DISTDIR=$GWAGENT_SRC_DIR/build/$TARGET_OS/$TARGET_CPU/$VARIANT/dist
+export OPENWRT_BASE="$HOME/openwrt"
+export OPENWRT_TOOLCHAIN_BASE=$OPENWRT_BASE/staging_dir/toolchain-mips_34kc_gcc-4.8-linaro_uClibc-0.9.33.2/
+export OPENWRT_TARGET_BASE=$OPENWRT_BASE/staging_dir/target-mips_34kc_uClibc-0.9.33.2/
+export STAGING_DIR=$OPENWRT_BASE/staging_dir/toolchain-mips_34kc_gcc-4.8-linaro_uClibc-0.9.33.2
+export PATH=$PATH:$OPENWRT_BASE/staging_dir/toolchain-mips_34kc_gcc-4.8-linaro_uClibc-0.9.33.2/bin
+export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$AJ_ROOT/core/alljoyn/build/$TARGET_OS/$TARGET_CPU/$VARIANT/dist/cpp/lib/
+export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$AJ_ROOT/core/alljoyn/build/$TARGET_OS/$TARGET_CPU/$VARIANT/dist/config/lib/
+export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$AJ_ROOT/core/alljoyn/build/$TARGET_OS/$TARGET_CPU/$VARIANT/dist/controlpanel/lib/
+export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$AJ_ROOT/core/alljoyn/build/$TARGET_OS/$TARGET_CPU/$VARIANT/dist/notification/lib/
+export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$AJ_ROOT/core/alljoyn/build/$TARGET_OS/$TARGET_CPU/$VARIANT/dist/services_common/lib/
+export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$AJ_ROOT/core/gwagent/build/$TARGET_OS/$TARGET_CPU/$VARIANT/dist/cpp/lib/
+export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$AJ_ROOT/core/gwagent/build/$TARGET_OS/$TARGET_CPU/$VARIANT/dist/config/lib/
+export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$AJ_ROOT/core/gwagent/build/$TARGET_OS/$TARGET_CPU/$VARIANT/dist/controlpanel/lib/
+export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$AJ_ROOT/core/gwagent/build/$TARGET_OS/$TARGET_CPU/$VARIANT/dist/notification/lib/
+export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$AJ_ROOT/core/gwagent/build/$TARGET_OS/$TARGET_CPU/$VARIANT/dist/services_common/lib/
+export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$AJ_ROOT/core/gwagent/build/$TARGET_OS/$TARGET_CPU/$VARIANT/dist/services_common/lib/
+export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$AJ_ROOT/core/gwagent/build/$TARGET_OS/$TARGET_CPU/$VARIANT/dist/gatewayMgmtApp/lib/
+export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$AJ_ROOT/core/gwagent/build/$TARGET_OS/$TARGET_CPU/$VARIANT/dist/gatewayController/lib/
+export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$AJ_ROOT/core/gwagent/build/$TARGET_OS/$TARGET_CPU/$VARIANT/dist/gatewayConnector/lib/
+export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/usr/$TARGET/lib/
+export PATH=$PATH:/usr/$TARGET/bin
+export MOSQUITTO_INCDIR=/usr/mips-openwrt-linux-uclibc/include
+export MOSQUITTO_LIBDIR=/usr/mips-openwrt-linux-uclibc/lib
+```
 
-
-**NOTE:** Before building, make sure that RAPIDJSON\_PATH and ALLJOYN\_DISTDIR environment variables, described above, are set appropriately.
+**NOTE:** Before building, make sure that RAPIDJSON\_INCDIR and ALLJOYN\_DISTDIR environment variables, described above, are set appropriately.
 
 Pull the source code from the repository into the muzzleyconn folder under $ROOTPATH, and run "make", specifying that we are NOT bulding a Gateway Connector app (explained in the next section):
 
