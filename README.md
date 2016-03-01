@@ -357,7 +357,7 @@ sudo service alljoyn-gwagent status
 
 1) Click on the "Muzzley" button to open the MQTT Connector app. Using the context menu on your Android device, click on "Create ACL".
 This will open up a window where you choose a name for your ACL, and choose which services will be allowed to pass through muzzleyconn.
-For now, select the "Expose all services" checkbox, since we want to ensure that the xmpconn app works just as the command-line muzzleyconn. Click on "Create".
+For now, select the "Expose all services" checkbox, since we want to ensure that the muzzleyconn app works just as the command-line muzzleyconn. Click on "Create".
 
 2) Go back to the previous window (the Muzzley Connector app). You will see that it still shows up as "Stopped". First, you need to make sure that the newly created ACL is in the "Active" state. Then, from the Linux command line, restart the Gateway Agent:
 ```
