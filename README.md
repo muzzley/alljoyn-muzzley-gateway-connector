@@ -375,7 +375,10 @@ sudo cp $ROOTPATH/muzzleyconn/Manifest.xml /opt/alljoyn/apps/muzzleyconn
 Note that the "store" and "acls" subdirectories will remain empty for now. You are now ready to execute muzzleyconn as a Gateway Connector app.
 
 
-#### Running the MUZZLEYCONN with the Gateway Agent (Working on it..)
+#### Running the MUZZLEYCONN with the Gateway Agent
+
+**NOTE:** The actual implementation on the Muzzley Connector is not propertly working as a Gateway Connector at this moment.
+Please, follow the instruction bellow and run it as a standalone application.
 
 ##### On the x86_64 target
 
