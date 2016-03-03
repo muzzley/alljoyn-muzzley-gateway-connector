@@ -52,29 +52,7 @@ using namespace json11;
 #define PORT_MIN    1024
 #define PORT_MAX    65535
 
-/*
-//MuzzleyPROD*******************************************
-const char* ROUTER_RECEIVE_ALLJOYN = "router/7100cb21-798b-4dd6-9c9d-1a39a874f587/io/i/type/alljoyn";
-const char* ROUTER_PUBLISH_ALLJOYN = "router/7100cb21-798b-4dd6-9c9d-1a39a874f587/io/o/type/alljoyn";
-const char* ROUTER_RECEIVE_UPNP = "router/7100cb21-798b-4dd6-9c9d-1a39a874f587/io/i/type/upnp";
-const char* ROUTER_PUBLISH_UPNP = "router/7100cb21-798b-4dd6-9c9d-1a39a874f587/io/o/type/upnp";
-const char* ROUTER_RECEIVE_CONFIG = "router/7100cb21-798b-4dd6-9c9d-1a39a874f587/io/i/type/config";
-const char* ROUTER_PUBLISH_CONFIG = "router/7100cb21-798b-4dd6-9c9d-1a39a874f587/io/o/type/config";
-//*****************************************************
-*/
-
-//MuzzleyBoothDEV**************************************
-const char* ROUTER_RECEIVE_ALLJOYN = "router/3277a741-e243-476d-a7bc-db87d4876bff/io/i/type/alljoyn";
-const char* ROUTER_PUBLISH_ALLJOYN = "router/3277a741-e243-476d-a7bc-db87d4876bff/io/o/type/alljoyn";
-const char* ROUTER_RECEIVE_UPNP = "router/3277a741-e243-476d-a7bc-db87d4876bff/io/i/type/upnp";
-const char* ROUTER_PUBLISH_UPNP = "router/3277a741-e243-476d-a7bc-db87d4876bff/io/o/type/upnp";
-const char* ROUTER_RECEIVE_CONFIG = "router/3277a741-e243-476d-a7bc-db87d4876bff/io/i/type/config";
-const char* ROUTER_PUBLISH_CONFIG = "router/3277a741-e243-476d-a7bc-db87d4876bff/io/o/type/config";
-//*****************************************************
-
 const char* ROUTER_DEVICEKEY_PATH = "/etc/muzzley/routerid.key";
-
-
 
 using namespace ajn;
 using namespace ajn::services;
@@ -2061,7 +2039,7 @@ MUZZLEYConnector::ReceiveAdvertisement(
 
     // Second line is the name to advertise
     string remoteName, advertisedName;
-    if(0 == getline(msgStream, remoteName)){ return; }                          //cout << "received XMPP advertised name: " << remoteName << endl; cout << message << endl;
+    if(0 == getline(msgStream, remoteName)){ return; }
     if(0 == getline(msgStream, advertisedName)){ return; }
 
     LOG_DEBUG("Received remote advertisement: %s", remoteName.c_str());
