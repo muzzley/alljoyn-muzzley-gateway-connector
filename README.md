@@ -378,7 +378,9 @@ Note that the "store" and "acls" subdirectories will remain empty for now. You a
 #### Running the MUZZLEYCONN with the Gateway Agent
 
 **NOTE: The actual implementation on the Muzzley Connector is not propertly working as a Gateway Connector at this moment.
-Please, skip this steps and follow the instructions bellow to run it as a standalone application.**
+Please, skip this steps and follow the instructions bellow to run it as a standalone application. 
+On the OpenWRT target, it is likely that the Alljoyn Gateway Agent starts automatically. 
+In this case the Muzlzey connector process must be killed and started manually again.**
 
 ##### On the x86_64 target
 
