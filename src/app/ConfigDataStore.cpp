@@ -51,15 +51,8 @@ ConfigDataStore::ConfigDataStore(
         m_restartCallback(func),
         m_IsInitialized(false)
 {
-    //TODO: SetNewFieldDetails("Roster",       REQUIRED,   "as");
     SetNewFieldDetails("Server",       REQUIRED,   "s");
-    SetNewFieldDetails("UserJID",      REQUIRED,   "s");
-    SetNewFieldDetails("UserPassword", REQUIRED,   "s");
-    SetNewFieldDetails("Roster",       REQUIRED,   "s");
-    SetNewFieldDetails("SerialNumber", REQUIRED,   "s");
-    SetNewFieldDetails("ProductID",    REQUIRED,   "s");
     SetNewFieldDetails("Port",         EMPTY_MASK, "i");
-    SetNewFieldDetails("RoomJID",      EMPTY_MASK, "s");
 }
 
 void ConfigDataStore::Initialize(bool reset)
@@ -95,46 +88,13 @@ void ConfigDataStore::Initialize(bool reset)
         string signature("s");
         value.Set(signature.c_str(),"");
         SetField("Server", value);
-        SetField("UserJID", value);
-        SetField("UserPassword", value);
-        SetField("SerialNumber", value);
-        SetField("ProductID", value);
-        SetField("Roster", value);
+
 
         std::map<std::string,std::string> configMap = configParser.GetConfigMap();
         for(std::map<std::string,std::string>::iterator it = configMap.begin(); it != configMap.end(); ++it){
             if(strcmp(it->first.c_str(), "Port") == 0){
                 signature = "i";
                 value.Set(signature.c_str(), configParser.GetPort());
-                value.Stabilize();
-            }
-            else if(strcmp(it->first.c_str(), "Roster") == 0){
-                /* TODO: Use this for an array
-                   vector<string> roster = configParser.GetRoster();
-                   const char** tmp = new const char*[roster.size()];
-                   size_t index(0);
-                   for ( vector<string>::const_iterator it(roster.begin());
-                   roster.end() != it; ++it, ++index )
-                   {
-                   tmp[index] = it->c_str();
-                   }
-                   signature = "as";
-                   value.Set(signature.c_str(), roster.size(), tmp);
-                   value.Stabilize();
-                   delete[] tmp;
-                   */
-                /////////////// TEMPORARY
-                vector<string> roster = configParser.GetRoster();
-                string firstvalue = roster.empty() ? string() : roster.front();
-                signature = "s";
-                value.Set(signature.c_str(), firstvalue.c_str());
-                value.Stabilize();
-                /////////////// END TEMPORARY
-            }
-            else if(strcmp(it->first.c_str(), "UserPassword") == 0){ 
-                string pwd("******");
-                signature = "s";
-                value.Set(signature.c_str(), pwd.c_str());
                 value.Stabilize();
             }
             else {
@@ -217,56 +177,6 @@ QStatus ConfigDataStore::Update(const char* name, const char* languageTag, const
             SetField(name, newvalue);
 
             Announce();
-        }
-    }
-    else if(strcmp(name, "Roster") == 0)
-    {
-        /* TODO: This will need to be an array
-           int32_t numItems = 0;
-           status = value->Get("as", &numItems, NULL);
-           char** tmpArray = new char*[numItems];
-           status = value->Get("as", &numItems, tmpArray);
-           vector<string> roster;
-           for ( int32_t index = 0; index < numItems; ++index )
-           {
-           roster.push_back(tmpArray[index]);
-           }
-           if(status == ER_OK){
-           MsgArg newvalue;
-           configParser.SetRoster( roster );
-           string signature("as");
-           newvalue.Set(signature.c_str(), numItems, tmpArray);
-           newvalue.Stabilize();
-           SetField(name, newvalue, "en");
-           }
-           delete[] tmpArray;
-           */
-        /////////////// TEMPORARY
-        status = value->Get("s", &chval);
-        if (status == ER_OK) 
-        {
-            // Update the config file
-            vector<string> roster;
-            roster.push_back(chval);
-            configParser.SetRoster( roster );
-
-            // Update our About service
-            MsgArg newvalue;
-            string signature("s");
-            newvalue.Set(signature.c_str(), chval);
-            newvalue.Stabilize();
-            SetField(name, newvalue);
-        }
-        /////////////// END TEMPORARY
-
-        // Re-announce
-        Announce();
-    }
-    else if(strcmp(name, "UserPassword") == 0)
-    {
-        status = value->Get("s", &chval);
-        if (status == ER_OK){
-            configParser.SetField(name, chval);
         }
     }
     else
