@@ -91,91 +91,7 @@ string ConfigParser::GetField(const char* field)
 
     return "";
 }
-vector<string> ConfigParser::GetRoster() const
-{
-    vector<string> roster;
-    stringstream err;
-    FILE* fp = fopen(configPath.c_str(), "rb");
 
-    if(!fp){
-        err << "Could not open file " << configPath << "!";
-        errors.push_back(err.str());
-        return roster; 
-    }
-
-    char readBuffer[CONFIGPARSER_BUF_SIZE] = {};
-    FileReadStream configStream(fp, readBuffer, sizeof(readBuffer));
-
-    Document d;
-    d.ParseStream(configStream);
-
-    if(d.HasMember("Roster") && d["Roster"].IsArray()){
-        fclose(fp);
-
-        const Value& s = d["Roster"];
-        for(SizeType i = 0; i < s.Size(); i++){
-            roster.push_back( s[i].GetString() );
-        }
-
-        return roster;
-    }
-
-    err << "Could not find field Roster!";
-    errors.push_back(err.str());
-    fclose(fp);
-
-    return roster; 
-    
-}
-int ConfigParser::SetRoster(vector<string> roster)
-{
-    stringstream err;
-    FILE* fpRead = fopen(configPath.c_str(), "rb");
-
-    if(!fpRead){
-        err << "Could not open file " << configPath << "!";
-        errors.push_back(err.str());
-        return -1; 
-    }
-
-    char readBuffer[CONFIGPARSER_BUF_SIZE] = {};
-    FileReadStream configStream(fpRead, readBuffer, sizeof(readBuffer));
-
-    Document d;
-    d.ParseStream(configStream);
-
-    if(!d.HasMember("Roster")){
-        Value::AllocatorType& a(d.GetAllocator());
-        d.AddMember("Roster", "", a);
-    }
-
-    Value& tmpArray = d["Roster"];
-    tmpArray.SetArray();
-    Value newValue;
-    for( vector<string>::const_iterator it(roster.begin());
-        roster.end() != it; ++it )
-    {
-        newValue.SetString(it->c_str(), it->size());
-        tmpArray.PushBack(newValue, d.GetAllocator());
-    }
-    fclose(fpRead);
-
-    FILE* fpWrite = fopen(configPath.c_str(), "wb");
-    if(!fpWrite){
-        err << "Could not open file " << configPath << "!";
-        errors.push_back(err.str());
-        return -1; 
-    }
-
-    char writeBuffer[CONFIGPARSER_BUF_SIZE] = {};
-    FileWriteStream configWriteStream(fpWrite, writeBuffer, sizeof(writeBuffer));
-    PrettyWriter<FileWriteStream> writer(configWriteStream);
-    d.Accept(writer);
-
-    fclose(fpWrite);
-
-    return 0;
-}
 
 int ConfigParser::GetPort()
 {
@@ -363,18 +279,13 @@ bool ConfigParser::isConfigValid()
         return false;
     }
 
-    //TODO: Checker for valid XMPP Conf file format
+    //TODO: Checker for valid Muzzley Conf file format
     for(map<string, string>::iterator it = configMap.begin(); it != configMap.end(); ++it){
         if(it->first == "ProductID" ||
            it->first == "SerialNumber"){
             foundRequiredCount++;
         }
         else if(it->first == "Server" ||
-                it->first == "UserJID" ||
-                it->first == "UserPassword" ||
-                it->first == "Roster" ||
-                it->first == "RoomJID" ||
-                it->first == "Compress" ||
                 it->first == "Verbosity" ||
                 it->first == "Port" ||
                 it->first == "AppId" ||

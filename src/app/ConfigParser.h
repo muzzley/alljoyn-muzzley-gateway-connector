@@ -31,7 +31,6 @@ class ConfigParser
 
         std::string GetField(const char* field);
         std::map<std::string, std::string> GetConfigMap();
-        std::vector<std::string> GetRoster() const;
         std::vector<std::string> GetErrors() const;
         int SetField(const char* field, const char* value);
         int GetPort();

@@ -84,12 +84,7 @@ public:
     MUZZLEYConnector(
         ajn::BusAttachment*             bus,
         const std::string&              busInterfaceName,
-        const std::string&              appName,
-        const std::string&              xmppJid,
-        const std::string&              xmppPassword,
-        const std::vector<std::string>& xmppRoster,
-        const std::string&              xmppChatroom,
-        const bool                      compress
+        const std::string&              appName
         );
 
     virtual ~MUZZLEYConnector();

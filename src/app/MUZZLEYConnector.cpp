@@ -636,12 +636,7 @@ const string MUZZLEYConnector::ALLJOYN_CODE_NAME_OWNER_CHANGED = "__NAME_OWNER_C
 MUZZLEYConnector::MUZZLEYConnector(
     BusAttachment*        bus,
     const string&         busInterfaceName,
-    const string&         appName,
-    const string&         xmppJid,
-    const string&         xmppPassword,
-    const vector<string>& xmppRoster,
-    const string&         xmppChatroom,
-    const bool            compress
+    const string&         appName
     ) :
 #ifndef NO_AJ_GATEWAY
     GatewayConnector(bus, appName.c_str()),
@@ -674,7 +669,6 @@ MUZZLEYConnector::MUZZLEYConnector(
     
 
     //Init Muzzley Connection somehow at this point...
-    //m_transport = new XmppTransport( this, xmppJid, xmppPassword, xmppRoster, xmppChatroom, compress);
     m_transport = new MqttTransport(this);
 
     m_transport->Subscribe(string("router/") + routerid + string("/io/i/type/alljoyn"));
@@ -3248,13 +3242,13 @@ MUZZLEYConnector::GlobalConnectionStateChanged(
     {
         // Update connection status and get remote profiles
 #ifndef NO_AJ_GATEWAY
-        /*
+        
         QStatus err = updateConnectionStatus(GW_CS_CONNECTED);
         if(err == ER_OK)
         {
             mergedAclUpdated();
         }
-        */
+        
 #endif
         break;
     }
@@ -3264,7 +3258,7 @@ MUZZLEYConnector::GlobalConnectionStateChanged(
     default:
     {
 #ifndef NO_AJ_GATEWAY
-        //updateConnectionStatus(GW_CS_NOT_CONNECTED);
+        updateConnectionStatus(GW_CS_NOT_CONNECTED);
 #endif
 
         break;

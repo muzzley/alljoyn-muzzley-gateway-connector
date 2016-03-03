@@ -187,26 +187,6 @@ static void SigIntHandler(int sig)
     }
 }
 
-string getJID()
-{
-    return s_User;
-}
-
-string getPassword()
-{
-    return s_Password;
-}
-
-vector<string> getRoster()
-{
-    return s_Roster;
-}
-
-string getChatRoom()
-{
-    return s_ChatRoom;
-}
-
 void getConfigurationFields(){
     ConfigParser configParser(CONF_FILE.c_str());
     if(!configParser.isConfigValid()){
@@ -231,10 +211,6 @@ void getConfigurationFields(){
         util::_verboselogging = false;
     }
 
-    s_User            = configParser.GetField("UserJID");
-    s_Password        = configParser.GetField("UserPassword");
-    s_Roster          = configParser.GetRoster();
-    s_ChatRoom        = configParser.GetField("RoomJID");
     s_SerialNumber    = configParser.GetField("SerialNumber");
     s_ProductID       = configParser.GetField("ProductID");
     s_AllJoynPasscode = configParser.GetField("AllJoynPasscode");
@@ -410,28 +386,13 @@ int main(int argc, char** argv)
 
         resetbus = false;
         
-        /*
-        if ( getJID().empty() ||
-             getPassword().empty() ||
-             getRoster().empty()
-            )
-        {
-            LOG_RELEASE("Configuration doesn't contain MUZZLEY parameters.");
-            waitForConfigChange = true;
-        }
-        */
         
         if ( !waitForConfigChange )
         {
             s_Conn = new MUZZLEYConnector(
                     s_Bus,
                     ALLJOYN_XMPP_CONFIG_INTERFACE_NAME,
-                    "muzzleyconn",
-                    getJID(),
-                    getPassword(), 
-                    getRoster(),
-                    getChatRoom(),
-                    s_Compress);
+                    "muzzleyconn");
 
             LOG_RELEASE("Initializing MUZZLEYConnector");
             QStatus status = s_Conn->Init();
