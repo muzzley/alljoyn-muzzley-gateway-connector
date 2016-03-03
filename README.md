@@ -200,7 +200,7 @@ The file looks like the following:
     "AppName" : "Muzzley MQTT Connector",
     "Manufacturer" : "Muzzley",
     "ModelNumber" : "MuzzleyConnector",
-    "Description" : "Muzzley Alljoyn MQTT connecoctor",
+    "Description" : "Muzzley Alljoyn MQTT connector",
     "DateOfManufacture" : "2016-03-01",
     "SoftwareVersion" : "0.0.1",
     "HardwareVersion" : "0.0.1",
