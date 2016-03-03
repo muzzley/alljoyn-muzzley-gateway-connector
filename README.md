@@ -99,7 +99,7 @@ core/
      		   (git checkout RB14.12b)
 
 	ajtcl/   (https://git.allseenalliance.org/gerrit/core/ajtcl.git)
-
+             (git checkout RB14.12b)
 	alljoyn/ (https://git.allseenalliance.org/gerrit/core/alljoyn.git)
 			 (git checkout RB14.12b)
 
@@ -127,6 +127,7 @@ services/
 ```
 export TARGET_OS="linux"
 export TARGET_CPU="x86_64"
+export TARGET="x86_64-linux-gnu"
 export VARIANT=debug
 export AJ_ROOT="$HOME/alljoyn-muzzley"
 export GWAGENT_SRC_DIR=$AJ_ROOT/core/gwagent
@@ -287,6 +288,7 @@ make menuconfig
           < > libxml2
           < > libgupnp
           < > libgssdp
+          < > mosquitto
           
 ```
 
@@ -296,6 +298,7 @@ make
 ```
 
 10) Flash it in the router firmware and wait for reboot.
+
 
 #### muzzleyconn
 
