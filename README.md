@@ -118,7 +118,7 @@ services/
 
 ```
 
-4)  Open a command terminal and from under the core/gwagent/cpp directory, clone this repository.
+4)  Open a command terminal and from under the **core/gwagent/cpp** directory, clone this repository.
 
 5) Rename connetor folder for a more friendly name like "MuzzleyConnector", and open the SConscript file under the core/gwagent/cpp directory, and add the same folder name to the array **gateway_dirs**.
 
@@ -166,27 +166,27 @@ scons V=1 OS=linux CPU=x86_64 BINDINGS="cpp" WS=off SERVICES="about,notification
 
 ### Running as a normal AllJoyn application
 
-When running as a normal AllJoyn application without the Gateaway Agent it is unnecessary for the gateway agent to be running.
+1) When running as a normal AllJoyn application without the Gateaway Agent it is unnecessary for the gateway agent to be running.
 In this case just make sure the alljoyn-daemon is running.
 
-If the instructions were followed according to the above Wiki article the daemon should already exist.
+2) If the instructions were followed according to the above Wiki article the daemon should already exist.
 It can be started as follows:
 ```
 sudo service alljoyn start
 ```
 
-Then the muzzleyconn application can run directly if desired.
+3) Then the muzzleyconn application can run directly if desired.
 ```
 ./muzzleyconn
 ```
 
-Next set up the configuration file:
-
+4) Next set up the configuration file:
 In the terminal navigate to the /etc/muzzleyconn folder and then open the muzzleyconn\_factory.conf file as superuser to edit it.
 ```
 sudo gedit /etc/muzzleyconn/muzzleyconn_factory.conf
 ```
-These arguments can be optionally modified as needed:
+
+5) These arguments can be optionally modified as needed:
 ```
 Verbosity - level of debug output verbosity. Can be 0, 1, or 2, with 2 being the most verbose
 ```
@@ -210,12 +210,12 @@ The file looks like the following:
 }
 ```
 
-Save and close the file. Now copy that file to /etc/muzzleyconn/muzzleyconn.conf as follows:
+6) Save and close the file. Now copy that file to /etc/muzzleyconn/muzzleyconn.conf as follows:
 ```
 sudo cp /etc/muzzleyconn/muzzleyconn_factory.conf /etc/muzzleyconn/muzzleyconn.conf
 ``` 
 
-You are now ready to connect the muzzleyconn connector to the Muzzley cloud.
+7) You are now ready to connect the muzzleyconn connector to the Muzzley cloud.
 
 #Build Instructions for OpenWRT
 
