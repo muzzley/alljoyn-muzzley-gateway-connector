@@ -377,8 +377,8 @@ Note that the "store" and "acls" subdirectories will remain empty for now. You a
 
 #### Running the MUZZLEYCONN with the Gateway Agent
 
-**NOTE:** The actual implementation on the Muzzley Connector is not propertly working as a Gateway Connector at this moment.
-Please, follow the instruction bellow and run it as a standalone application.
+**NOTE: The actual implementation on the Muzzley Connector is not propertly working as a Gateway Connector at this moment.
+Please, follow the instruction bellow and run it as a standalone application.**
 
 ##### On the x86_64 target
 
