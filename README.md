@@ -201,7 +201,7 @@ The file looks like the following:
     "Manufacturer" : "Muzzley",
     "ModelNumber" : "MuzzleyConnector",
     "Description" : "Muzzley Alljoyn MQTT connecoctor",
-    "DateOfManufacture" : "1016-03-01",
+    "DateOfManufacture" : "2016-03-01",
     "SoftwareVersion" : "0.0.1",
     "HardwareVersion" : "0.0.1",
     "SupportUrl" : "http://www.muzzley.com",
