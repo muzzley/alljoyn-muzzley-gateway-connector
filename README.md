@@ -299,8 +299,7 @@ make
 
 10) Flash it in the router firmware and wait for reboot.
 
-
-#### muzzleyconn
+#### Compiling MUZZLEYCONN connector
 
 1) Export the following ambient variables to setup your openwrt build environment.
 
@@ -339,20 +338,15 @@ export PATH=$PATH:/usr/$TARGET/bin
 **NOTE:** Before building, make sure that **TARGET**, **RAPIDJSON\_INCDIR**, **LIBGLIB_INCDIR**, **LIBGLIB_LIBDIR**, **MOSQUITTO_INCDIR** and **MOSQUITTO_LIBDIR** are set appropriately, accordingly with your hardware architecture.
 For ex.: **mips-openwrt-linux-uclibc**
 
-
-### Running as an AllJoyn Gateway Connector application
-
 The following commands are targgted for a **mips-openwrt-linux-uclibc** hardware architecture.
 Some command changes may by needed for a different architecture.
 
-#### Compiling the connector
-
-1) To compile the connector open a new terminal window under **~/alljoyn-muzzley/core/gwagent/**, and run the following **scons** compile command:
+2) To compile the connector open a new terminal window under **~/alljoyn-muzzley/core/gwagent/**, and run the following **scons** compile command:
 ```
 scons V=1 ICE=off BR=on BT=off WS=off CPU=openwrt OS=openwrt BINDINGS="cpp" SERVICES="about,notification,controlpanel,config,onboarding,sample_apps" TARGET_CFLAGS="-Os -pipe -mips32r2 -mtune=74kc -fPIC -fno-caller-saves -fhonour-copts -Wno-error=unused-but-set-variable -msoft-float" "TARGET_CC=$TARGET-gcc" "TARGET_CXX=$TARGET-g++" "TARGET_AR=$TARGET-ar" "TARGET_RANLIB=$TARGET-ranlib" "TARGET_LINK=$TARGET-gcc" "TARGET_CPPFLAGS=-I$OPENWRT_TARGET_BASE/usr/include -I$OPENWRT_TARGET_BASE/include -I$OPENWRT_TOOLCHAIN_BASE/usr/include -I$OPENWRT_TOOLCHAIN_BASE/include" "TARGET_PATH=$OPENWRT_TOOLCHAIN_BASE/bin:$OPENWRT_BASE/staging_dir/host/bin:$PATH" "STAGING_DIR=$OPENWRT_TARGET_BASE" "TARGET_LINKFLAGS=-L$OPENWRT_TARGET_BASE/usr/lib" "CXXFLAGS=$CXXFLAGS -I$AJ_DIST/cpp/inc -I$AJ_DIST/about/inc -I$AJ_DIST/services_common/inc -I$AJ_DIST/notification/inc -I$AJ_DIST/controlpanel/inc -I$AJ_DIST/services_common/inc" "LDFLAGS=$LDFLAGS -L$AJ_DIST/cpp/lib -L$AJ_DIST/about/lib -L$AJ_DIST/services_common/lib -L$AJ_DIST/notification/lib -L$AJ_DIST/controlpanel/lib"
 ```
 
-2) To clean the build environment, just add a "-c" at the end of the previous command.
+3) To clean the build environment, just add a "-c" at the end of the previous command.
 ```
 scons V=1 ICE=off BR=on BT=off WS=off CPU=openwrt OS=openwrt BINDINGS="cpp" SERVICES="about,notification,controlpanel,config,onboarding,sample_apps" TARGET_CFLAGS="-Os -pipe -mips32r2 -mtune=74kc -fPIC -fno-caller-saves -fhonour-copts -Wno-error=unused-but-set-variable -msoft-float" "TARGET_CC=$TARGET-gcc" "TARGET_CXX=$TARGET-g++" "TARGET_AR=$TARGET-ar" "TARGET_RANLIB=$TARGET-ranlib" "TARGET_LINK=$TARGET-gcc" "TARGET_CPPFLAGS=-I$OPENWRT_TARGET_BASE/usr/include -I$OPENWRT_TARGET_BASE/include -I$OPENWRT_TOOLCHAIN_BASE/usr/include -I$OPENWRT_TOOLCHAIN_BASE/include" "TARGET_PATH=$OPENWRT_TOOLCHAIN_BASE/bin:$OPENWRT_BASE/staging_dir/host/bin:$PATH" "STAGING_DIR=$OPENWRT_TARGET_BASE" "TARGET_LINKFLAGS=-L$OPENWRT_TARGET_BASE/usr/lib" "CXXFLAGS=$CXXFLAGS -I$AJ_DIST/cpp/inc -I$AJ_DIST/about/inc -I$AJ_DIST/services_common/inc -I$AJ_DIST/notification/inc -I$AJ_DIST/controlpanel/inc -I$AJ_DIST/services_common/inc" "LDFLAGS=$LDFLAGS -L$AJ_DIST/cpp/lib -L$AJ_DIST/about/lib -L$AJ_DIST/services_common/lib -L$AJ_DIST/notification/lib -L$AJ_DIST/controlpanel/lib" -c
 ```
@@ -393,6 +387,7 @@ sudo cp $ROOTPATH/muzzleyconn/Manifest.xml /opt/alljoyn/apps/muzzleyconn
 
 6) The Gateway Connector app needs a configuration file. Copy your muzzleyconn_factory.conf file to: **/opt/alljoyn/apps/muzzleyconn/etc/muzzleyconn_factory.conf**.
 Note that the "store" and "acls" subdirectories will remain empty for now. You are now ready to execute muzzleyconn as a Gateway Connector app.
+
 
 #### Running the MUZZLEYCONN with the Gateway Agent (Working on it..)
 
