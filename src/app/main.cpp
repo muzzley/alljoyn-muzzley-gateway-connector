@@ -217,8 +217,7 @@ void getConfigurationFields(){
 
     string verbosity = configParser.GetField("Verbosity");
     
-    verbosity = "2";
-
+    
     if(verbosity == "2"){
         util::_dbglogging = true;
         util::_verboselogging = true;
