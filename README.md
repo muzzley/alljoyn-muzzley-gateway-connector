@@ -165,29 +165,13 @@ scons V=1 OS=linux CPU=x86_64 BINDINGS="cpp" WS=off SERVICES="about,notification
 scons V=1 OS=linux CPU=x86_64 BINDINGS="cpp" WS=off SERVICES="about,notification,controlpanel,config,onboarding,sample_apps" -c
 ```
 
-### Running as a normal AllJoyn application
-
-1) When running as a normal AllJoyn application without the Gateaway Agent it is unnecessary for the gateway agent to be running.
-In this case just make sure the alljoyn-daemon is running.
-
-2) If the instructions were followed according to the above Wiki article the daemon should already exist.
-It can be started as follows:
-```
-sudo service alljoyn start
-```
-
-3) Then the muzzleyconn application can run directly if desired.
-```
-./muzzleyconn
-```
-
-4) Next set up the configuration file:
+10) Next set up the configuration file:
 In the terminal navigate to the **/etc/muzzleyconn** folder and then open the **muzzleyconn\_factory.conf** file as superuser to edit it.
 ```
 sudo gedit /etc/muzzleyconn/muzzleyconn_factory.conf
 ```
 
-5) These arguments can be optionally modified as needed:
+11) These arguments can be optionally modified as needed:
 ```
 Verbosity - level of debug output verbosity. Can be 0, 1, or 2, with 2 being the most verbose
 ```
@@ -211,12 +195,13 @@ The file looks like the following:
 }
 ```
 
-6) Save and close the file. Now copy that file to /etc/muzzleyconn/muzzleyconn.conf as follows:
+12) Save and close the file. Now copy that file to /etc/muzzleyconn/muzzleyconn.conf as follows:
 ```
 sudo cp /etc/muzzleyconn/muzzleyconn_factory.conf /etc/muzzleyconn/muzzleyconn.conf
 ``` 
 
-7) You are now ready to connect the muzzleyconn connector to the Muzzley cloud.
+13) You are now ready to connect the muzzleyconn connector to the Muzzley cloud.
+
 
 #Build Instructions for OpenWRT
 
@@ -440,6 +425,25 @@ If this happens, you will need to restart the AllJoyn service, and then restart 
 
 
 #### Running the MUZZLEYCONN as standalone
+
+##### On the x86_64 target
+
+1) When running as a normal AllJoyn application without the Gateaway Agent it is unnecessary for the gateway agent to be running.
+In this case just make sure the alljoyn-daemon is running.
+
+2) If the instructions were followed according to the above Wiki article the daemon should already exist.
+It can be started as follows:
+```
+sudo service alljoyn start
+```
+
+3) Then the muzzleyconn application can be run directly if desired.
+```
+./muzzleyconn
+```
+4) Check the logs for any error.
+
+##### On the OpenWRT target
 
 1) Start the Muzzley Connector, simply running it:
 ```
