@@ -396,7 +396,7 @@ Note that the "store" and "acls" subdirectories will remain empty for now. You a
 
 #### Running the MUZZLEYCONN with the Gateway Agent (Working on it..)
 
-### On the x86_64 target
+##### On the x86_64 target
 
 1) Start the Gateway Agent:
 ```
@@ -408,7 +408,7 @@ sudo service alljoyn-gwagent start
 sudo service alljoyn-gwagent status
 ``` 
 
-### On the OpenWRT target
+##### On the OpenWRT target
 
 1) Start the Gateway Agent:
 ```
