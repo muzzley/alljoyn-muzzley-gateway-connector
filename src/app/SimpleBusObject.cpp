@@ -1,6 +1,6 @@
 #include "SimpleBusObject.h"
 #include "alljoyn/InterfaceDescription.h"
-#include "common/xmppconnutil.h"
+#include "common/muzzleyconnutil.h"
 #include <string>
 
 

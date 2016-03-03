@@ -15,7 +15,7 @@
  */
 
 #include "SessionTracker.h"
-#include "common/xmppconnutil.h"
+#include "common/muzzleyconnutil.h"
 
 SessionTracker::SessionTracker()
 {

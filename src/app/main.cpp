@@ -14,18 +14,18 @@
  * CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  */
 
-#include "app/XMPPConnector.h"
+#include <sys/resource.h>
+#include "app/MUZZLEYConnector.h"
 #include "app/AboutObjApi.h"
 #include "app/ConfigDataStore.h"
 #include "app/ConfigServiceListenerImpl.h"
 #include "app/ConfigParser.h"
-#include "common/xmppconnutil.h"
+#include "common/muzzleyconnutil.h"
 #include "common/CommonBusListener.h"
 #include "SimpleBusObject.h"
 
 #include <alljoyn/about/AboutPropertyStoreImpl.h>
 #include <alljoyn/about/AnnouncementRegistrar.h>
-#include <alljoyn/about/AboutServiceApi.h>
 #include <alljoyn/services_common/GuidUtil.h>
 #include <alljoyn/AboutObj.h>
 #include <alljoyn/BusAttachment.h>
@@ -71,7 +71,7 @@ static int s_ConfigFileDescriptor = 0;
 static int s_ConfigFileWatchDescriptor = 0;
 
 static BusAttachment* s_Bus = 0;
-static XMPPConnector* s_Conn = 0;
+static MUZZLEYConnector* s_Conn = 0;
 static AboutObj* aboutObj = NULL;
 static CommonBusListener* busListener = NULL;
 static ConfigDataStore* configDataStore = NULL;
@@ -81,13 +81,13 @@ static ajn::services::ConfigService* configService = NULL;
 static vector<string> s_Roster;
 
 #ifndef NO_AJ_GATEWAY
-const string CONF_DIR  = "/opt/alljoyn/apps/xmppconn/etc";
+const string CONF_DIR  = "/opt/alljoyn/apps/muzzleyconn/etc";
 #else
-const string CONF_DIR  = "/etc/xmppconn";
+const string CONF_DIR  = "/etc/muzzleyconn";
 #endif // !NO_AJ_GATEWAY
 
-const string CONF_FILE = CONF_DIR + "/xmppconn.conf";
-const string FACTORY_FILE = CONF_DIR + "/xmppconn_factory.conf";
+const string CONF_FILE = CONF_DIR + "/muzzleyconn.conf";
+const string FACTORY_FILE = CONF_DIR + "/muzzleyconn_factory.conf";
 
 
 static string s_User = "test";
@@ -216,6 +216,9 @@ void getConfigurationFields(){
     }
 
     string verbosity = configParser.GetField("Verbosity");
+    
+    verbosity = "2";
+
     if(verbosity == "2"){
         util::_dbglogging = true;
         util::_verboselogging = true;
@@ -253,7 +256,10 @@ void getConfigurationFields(){
 
 int main(int argc, char** argv)
 {
+    
+
     signal(SIGINT, SigIntHandler);
+    signal(SIGPIPE, SIG_IGN);	//ignore "broken pipes" caused by TLS errors
 
     // Ensure that we can open our config file
     ifstream conf_file(CONF_FILE.c_str());
@@ -289,7 +295,7 @@ int main(int argc, char** argv)
 
         if ( resetbus )
         {
-            s_Bus = new BusAttachment("XMPPConnector", true);
+            s_Bus = new BusAttachment("MuzzleyConnector", true);
     
             // Set up bus attachment
             QStatus status = s_Bus->Start();
@@ -305,7 +311,7 @@ int main(int argc, char** argv)
                 cleanup();
                 return status;
             }
-        
+
             configDataStore = new ConfigDataStore(FACTORY_FILE.c_str(),
                                                   CONF_FILE.c_str(),
                                                   s_AppId.c_str(),
@@ -320,7 +326,7 @@ int main(int argc, char** argv)
                 LOG_RELEASE("Failed to get About Service instance!");
                 return ER_BUS_NOT_ALLOWED;
             }
-        
+
             busListener = new CommonBusListener(s_Bus, simpleCallback);
         
             SessionPort sp = 900;
@@ -404,38 +410,41 @@ int main(int argc, char** argv)
         }
 
         resetbus = false;
+        
+        /*
         if ( getJID().empty() ||
              getPassword().empty() ||
              getRoster().empty()
             )
         {
-            LOG_RELEASE("Configuration doesn't contain XMPP parameters.");
+            LOG_RELEASE("Configuration doesn't contain MUZZLEY parameters.");
             waitForConfigChange = true;
         }
-
+        */
+        
         if ( !waitForConfigChange )
         {
-            s_Conn = new XMPPConnector(
+            s_Conn = new MUZZLEYConnector(
                     s_Bus,
                     ALLJOYN_XMPP_CONFIG_INTERFACE_NAME,
-                    "xmppconn",
+                    "muzzleyconn",
                     getJID(),
                     getPassword(), 
                     getRoster(),
                     getChatRoom(),
                     s_Compress);
 
-            LOG_RELEASE("Initializing XMPPConnector");
+            LOG_RELEASE("Initializing MUZZLEYConnector");
             QStatus status = s_Conn->Init();
             if(ER_OK != status)
             {
-                LOG_RELEASE("Could not initialize XMPPConnector! Reason: %s", QCC_StatusText(status));
+                LOG_RELEASE("Could not initialize MUZZLEYConnector! Reason: %s", QCC_StatusText(status));
                 waitForConfigChange = true;
             }
             else
             {
-                s_Conn->AddSessionPortMatch("org.alljoyn.ControlPanel.ControlPanel", 1000);
-                s_Conn->AddSessionPortMatch("org.alljoyn.bus.samples.chat", 27);
+                //s_Conn->AddSessionPortMatch("org.alljoyn.ControlPanel.ControlPanel", 1000);
+                //s_Conn->AddSessionPortMatch("org.alljoyn.bus.samples.chat", 27);
                 // TODO: We will likely need to handle different types of errors,
                 // instead of the generic "!ER_OK"
                 // For now, only the authentication failure is returned
@@ -469,7 +478,7 @@ int main(int argc, char** argv)
                 return errno;
             }
 
-            LOG_RELEASE("Waiting for configuration changes before trying to connect to the XMPP server...");
+            LOG_RELEASE("Waiting for configuration changes before trying to connect to the MUZZLEY server...");
             inotify_event evt = {};
 
             fd_set descriptors;
@@ -521,5 +530,6 @@ int main(int argc, char** argv)
         }
 
     }while(s_Continue);
+
 }
 

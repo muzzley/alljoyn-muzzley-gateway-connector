@@ -24,7 +24,7 @@
 #include "alljoyn/SessionPortListener.h"
 
 class RemoteBusAttachment;
-class XMPPConnector;
+class MUZZLEYConnector;
 
 class RemoteBusListener :
     public ajn::BusListener,
@@ -34,7 +34,7 @@ class RemoteBusListener :
 public:
     RemoteBusListener(
         RemoteBusAttachment* bus,
-        XMPPConnector*       connector
+        MUZZLEYConnector*    connector
         );
 
     virtual
@@ -66,7 +66,7 @@ public:
 
 private:
     RemoteBusAttachment* m_bus;
-    XMPPConnector*       m_connector;
+    MUZZLEYConnector*    m_connector;
 
     bool m_sessionJoinedSignalReceived;
     ajn::SessionId m_remoteSessionId;

@@ -40,7 +40,7 @@
 #include <libxml/tree.h>
 #include <libxml/xmlwriter.h>
 
-//#include "transport/MQTTtransport.h"
+#include "transport/MqttTransport.h"
 #include "transport/Transport.h"
 #include "common/muzzleyconnutil.h"
 #include "common/SessionTracker.h"
@@ -402,28 +402,20 @@ private:
                 const std::string& source,
                 const std::string& message
                 );
-    /*
+    
     void
         GlobalConnectionStateChanged(
                 const Transport::ConnectionState& new_state,
                 const Transport::ConnectionError& error
                 );
-    */
-
-    /*
+    
     void
         RemoteSourcePresenceStateChanged(
                 const std::string&                source,
                 const Transport::ConnectionState& new_state,
                 const Transport::ConnectionError& error
                 );
-    */
-
-    void
-        RemoteSourcePresenceStateChanged(
-                const std::string&                source
-                );
-
+    
 
     void
         UnregisterFromAdvertisementsAndAnnouncements(const std::string& source);

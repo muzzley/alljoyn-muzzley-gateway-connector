@@ -15,7 +15,7 @@
  */ 
 
 #include "app/ConfigParser.h"
-#include "common/xmppconnutil.h"
+#include "common/muzzleyconnutil.h"
 
 #include "rapidjson/document.h"
 #include "rapidjson/prettywriter.h"

@@ -42,10 +42,10 @@ using std::endl;
 using std::istringstream;
 using std::ostringstream;
 
-const string ALLJOYN_URL_SUFFIX = "org.alljoyn.XmppConnector";
-const string ALLJOYN_XMPP_SUFFIX = "XmppConnector";
+const string ALLJOYN_URL_SUFFIX = "org.alljoyn.MuzzleyConnector";
+const string ALLJOYN_XMPP_SUFFIX = "MUZZLEYConnector";
 const string ALLJOYN_XMPP_CONFIG_INTERFACE_NAME = "org.alljoyn.Config." + ALLJOYN_XMPP_SUFFIX;
-const string ALLJOYN_XMPP_CONFIG_PATH = "/Config/XmppConnector";
+const string ALLJOYN_XMPP_CONFIG_PATH = "/Config/MuzzleyConnector";
 
 namespace util {
 

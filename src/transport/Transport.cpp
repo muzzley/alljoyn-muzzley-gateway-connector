@@ -16,7 +16,7 @@
 
 #include "Transport.h"
 #include <pthread.h>
-#include "common/xmppconnutil.h"
+
 
 using namespace std;
 
@@ -39,20 +39,16 @@ Transport::Transport( TransportListener* listener ) :
 	m_mtx = mtx;
 }
 
-Transport::~Transport()
-{
+Transport::~Transport(){
 	pthread_mutex_t* mtx = transport_get_mutex(m_mtx);
 	delete mtx;
 	m_mtx = 0;
 }
 
-Transport::ConnectionError
-Transport::Run()
-{
+Transport::ConnectionError Transport::Run(){
     Transport::ConnectionError error = none;
     Transport::ConnectionState conn_state = uninitialized;
-    while ( conn_state != disconnected && error == none )
-    {
+    while ( conn_state != disconnected && error == none ){
         error = RunOnce();
         conn_state = Transport::GetConnectionState();
     }
@@ -60,70 +56,59 @@ Transport::Run()
     return error;
 }
 
-void
-Transport::Stop()
-{
+void Transport::Stop(){
 	Transport::SetConnectionState( disconnecting );
 	StopImpl();
 }
 
-Transport::ConnectionError
-Transport::Send(
-    const string& message
-	)
-{
-	return SendImpl( message );
+
+void Transport::Subscribe(const string& topic){
+	return SubscribeImpl(topic);
 }
 
-void
-Transport::MessageReceived(
-    const string& source,
-    const string& message
-    )
-{
-	if ( !m_listener )
-	{
+Transport::ConnectionError Transport::Send(const string& topic, const string& message){
+	return SendImpl( topic, message );
+}
+
+void Transport::MessageReceived(const string& source, const string& message){
+	if ( !m_listener ){
 		return;
 	}
 
 	m_listener->MessageReceived( source, message );
 }
 
-void
-Transport::GlobalConnectionStateChanged(
+
+void Transport::GlobalConnectionStateChanged(
     const Transport::ConnectionState& new_state,
     const Transport::ConnectionError& error
     )
 {
-	if ( !m_listener )
-	{
+	if ( !m_listener ){
 		return;
 	}
 
-	LOG_VERBOSE("Transport::GlobalConnectionStateChanged, setting conn state to %d", new_state);
+	//LOG_VERBOSE("Transport::GlobalConnectionStateChanged,
+	//			   setting conn state to %d", new_state);
 	SetConnectionState( new_state );
 	SetConnectionError( error );
 	m_listener->GlobalConnectionStateChanged( new_state, error );
 }
 
-void
-Transport::RemoteSourcePresenceStateChanged(
+void Transport::RemoteSourcePresenceStateChanged(
 	const std::string&                source,
     const Transport::ConnectionState& new_state,
     const Transport::ConnectionError& error
     )
 {
-	if ( !m_listener )
-	{
+	if ( !m_listener ){
 		return;
 	}
 
 	m_listener->RemoteSourcePresenceStateChanged( source, new_state, error );
 }
 
-Transport::ConnectionState
-Transport::GetConnectionState() const
-{
+Transport::ConnectionState Transport::GetConnectionState() const {
 	LOCK;
 	Transport::ConnectionState state = m_connection_state;
 	UNLOCK;
@@ -131,11 +116,7 @@ Transport::GetConnectionState() const
 	return state;
 }
 
-Transport::ConnectionState
-Transport::SetConnectionState(
-	const Transport::ConnectionState& new_state
-	)
-{
+Transport::ConnectionState Transport::SetConnectionState(const Transport::ConnectionState& new_state){
 	LOCK;
 	Transport::ConnectionState prev_state = m_connection_state;
 	m_connection_state = new_state;
@@ -144,9 +125,7 @@ Transport::SetConnectionState(
 	return prev_state;
 }
 
-Transport::ConnectionError
-Transport::GetConnectionError() const
-{
+Transport::ConnectionError Transport::GetConnectionError() const {
     LOCK;
     Transport::ConnectionError error = m_connection_error;
     UNLOCK;
@@ -154,11 +133,7 @@ Transport::GetConnectionError() const
     return error;
 }
 
-Transport::ConnectionError
-Transport::SetConnectionError(
-    const Transport::ConnectionError& error
-    )
-{
+Transport::ConnectionError Transport::SetConnectionError(const Transport::ConnectionError& error){
     LOCK;
     Transport::ConnectionError prev_error = m_connection_error;
     m_connection_error = error;
@@ -166,3 +141,4 @@ Transport::SetConnectionError(
 
     return prev_error;
 }
+

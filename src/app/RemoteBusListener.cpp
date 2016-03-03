@@ -16,16 +16,15 @@
 
 #include "RemoteBusListener.h"
 #include <pthread.h>
-#include "XMPPConnector.h"
+#include "MUZZLEYConnector.h"
 #include "RemoteBusAttachment.h"
 
 using namespace std;
 using namespace ajn;
-using namespace ajn::services;
 
 RemoteBusListener::RemoteBusListener(
     RemoteBusAttachment* bus,
-    XMPPConnector*       connector
+    MUZZLEYConnector*    connector
     ) :
     m_bus(bus),
     m_connector(connector),

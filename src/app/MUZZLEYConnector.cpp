@@ -490,11 +490,6 @@ public:
         }
     }
 
-
-
-
-
-
     void
     LostAdvertisedName(
         const char*   name,
@@ -708,11 +703,12 @@ MUZZLEYConnector::MUZZLEYConnector(
     m_transport->Subscribe(string("router/") + routerid + string("/io/i/type/upnp"));
     m_transport->Subscribe(string("router/") + routerid + string("/io/i/type/config"));
 
-    //m_transport->Subscribe(ROUTER_RECEIVE_ALLJOYN);
-    //m_transport->Subscribe(ROUTER_RECEIVE_UPNP);
-    //m_transport->Subscribe(ROUTER_RECEIVE_CONFIG);
+    MUZZLEYConnector::RemoteSourcePresenceStateChanged("MuzzleyConnector", m_transport->connected, m_transport->none);
 
-    
+    MUZZLEYConnector::RemoteSourcePresenceStateChanged("Controlle", m_transport->connected, m_transport->none);
+    MUZZLEYConnector::RemoteSourcePresenceStateChanged("LIFX Color 1000", m_transport->connected, m_transport->none);
+
+
     pthread_mutex_init(&m_remoteAttachmentsMutex, NULL);
 
     m_propertyBus.Start();
@@ -735,7 +731,8 @@ MUZZLEYConnector::MUZZLEYConnector(
         Transport::ConnectionError status = m_transport->Send(topic, unknown_req_str); 
     }
 
-//JSON Parser*********************************************
+    /*
+    //JSON Parser*********************************************
     const string simple_test = "{\"k1\":\"v1\", \"k2\":42, \"k3\":[\"a\",123,true,false,null]}";
 
     string err;
@@ -756,22 +753,8 @@ MUZZLEYConnector::MUZZLEYConnector(
 
 
     //**********************************************************
-        
-/*    
-    //UPNP GUPNP Advertise*****************************************************
-    typedef tuple <string, string, string> component;
-    vector <component> components;
-    components.push_back(make_tuple("id", "label", "type"));
-        
-    upnp_advertiser ad = upnp_advertiser("interface", "host", 1000, "xml_filename", "xml_filepath",
-        "profileid", "friendlyname", "channelid", "macaddress", "serialnumber", "manufacturer",
-        "manufacturer_url", "modelname", "modelnumber", "modelDescription", components);
+    */   
 
-    ad.loop();
-    //*************************************************************************
-*/
-
-    
 
 }
 
@@ -884,11 +867,6 @@ MUZZLEYConnector::Start()
     // Listen for messages. Blocks until transport.Stop() is called.
 
     //After connecting to muzzley... 
-    //MUZZLEYConnector::GlobalConnectionStateChanged();
-
-    MUZZLEYConnector::RemoteSourcePresenceStateChanged("LIFX Color 1000");
-    MUZZLEYConnector::RemoteSourcePresenceStateChanged("Controlee");
-
     std::thread upnp_thread([&] (){
             muzzley_upnp_manager->loop();
         });
@@ -896,9 +874,8 @@ MUZZLEYConnector::Start()
     
     //MUZZLEYConnector::LostAdvertisedName();
 
-    LOG_RELEASE("Running_ok...");
-
     while(muzzley_running){
+        LOG_RELEASE("Running_ok...");
         sleep(5);    
     }
 
@@ -3280,7 +3257,7 @@ MUZZLEYConnector::MessageReceived(
     }
 }
 
-/*
+
 void
 MUZZLEYConnector::GlobalConnectionStateChanged(
     const Transport::ConnectionState& new_state,
@@ -3293,11 +3270,13 @@ MUZZLEYConnector::GlobalConnectionStateChanged(
     {
         // Update connection status and get remote profiles
 #ifndef NO_AJ_GATEWAY
+        /*
         QStatus err = updateConnectionStatus(GW_CS_CONNECTED);
         if(err == ER_OK)
         {
             mergedAclUpdated();
         }
+        */
 #endif
         break;
     }
@@ -3307,7 +3286,7 @@ MUZZLEYConnector::GlobalConnectionStateChanged(
     default:
     {
 #ifndef NO_AJ_GATEWAY
-        updateConnectionStatus(GW_CS_NOT_CONNECTED);
+        //updateConnectionStatus(GW_CS_NOT_CONNECTED);
 #endif
 
         break;
@@ -3315,9 +3294,7 @@ MUZZLEYConnector::GlobalConnectionStateChanged(
     }
 
 }
-*/
 
-/*
 void
 MUZZLEYConnector::RemoteSourcePresenceStateChanged(
     const std::string&                source,
@@ -3349,7 +3326,7 @@ MUZZLEYConnector::RemoteSourcePresenceStateChanged(
         }
 
         // Listen for announcements
-        err = ajn::services::AnnouncementRegistrar::RegisterAnnounceHandler(
+        err = AnnouncementRegistrar::RegisterAnnounceHandler(
                 *attachment, *listener, NULL, 0);
 
         if(err != ER_OK)
@@ -3386,78 +3363,6 @@ MUZZLEYConnector::RemoteSourcePresenceStateChanged(
     }
     }
 
-}
-*/
-
-void
-MUZZLEYConnector::RemoteSourcePresenceStateChanged(
-    const std::string&                source
-    )
-{
-
-    // Create local bus attachments and listeners to begin listening and interacting with the local AllJoyn bus
-    BusAttachment* attachment = CreateBusAttachment(source);
-    AllJoynListener* listener = GetBusListener(source);
-
-    if ( !attachment || !listener )
-    {
-        LOG_RELEASE("Failed to create bus attachment or listener!");
-        return;
-    }
-
-    LOG_RELEASE("Created bus attachment: %s and bus listener: %s", source.c_str(), source.c_str());
-
-
-    // Start listening for advertisements
-    QStatus err = attachment->FindAdvertisedName("");
-    if(err != ER_OK)
-    {
-        LOG_RELEASE("Could not find advertised names for %s: %s",
-                source.c_str(),
-                QCC_StatusText(err));
-    }
-
-    LOG_RELEASE("Found advertised name for: %s: %s", source.c_str(), QCC_StatusText(err));
-
-
-    // Listen for announcements
-    err = AnnouncementRegistrar::RegisterAnnounceHandler(
-            *attachment, *listener, NULL, 0);
-
-    if(err != ER_OK)
-    {
-        LOG_RELEASE("Could not register Announcement handler for %s: %s",
-                source.c_str(),
-                QCC_StatusText(err));
-    }
-   
-    LOG_RELEASE("Registered Announcement handler successfully for: %s: %s",  source.c_str(), QCC_StatusText(err));
-
-
-    listener->FoundAdvertisedName("MuzzleyConnector");
-
-    //When it fails...
-    /*
-    // Delete all the remote bus attachments
-    pthread_mutex_lock(&m_remoteAttachmentsMutex);
-    for ( map<string, list<RemoteBusAttachment*> >::iterator connections_it(m_remoteAttachments.begin());
-        m_remoteAttachments.end() != connections_it; ++connections_it )
-    {
-        if ( connections_it->first == source )
-        {
-            for(list<RemoteBusAttachment*>::iterator it = connections_it->second.begin();
-                it != connections_it->second.end(); ++it)
-            {
-                delete(*it);
-            }
-        }
-    }
-    m_remoteAttachments.clear();
-    pthread_mutex_unlock(&m_remoteAttachmentsMutex);
-
-    DeleteBusAttachment(source);
-    */
-    
 }
 
 void MUZZLEYConnector::UnregisterFromAdvertisementsAndAnnouncements(const std::string& source)

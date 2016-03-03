@@ -14,8 +14,8 @@
  * CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  */
 
-#ifndef TRANSPORT_H_
-#define TRANSPORT_H_
+#pragma once
+
 
 #include <string>
 
@@ -43,48 +43,35 @@ public:
         host_unreachable
     } ConnectionError;
 
-    Transport(
-        TransportListener* listener
-        );
-    virtual ~Transport();
+    struct mosquitto * mosq_trans;
 
-    ConnectionError
-    Run();
+    Transport(TransportListener* listener);
+    ~Transport();
 
-    void
-    Stop();
+    ConnectionError Run();
+    void Stop();
     
-    ConnectionError
-    Send(
-        const std::string& message
-    );
+    void Subscribe(const std::string& topic);
+    ConnectionError Send(const std::string& topic, const std::string& message);
+    ConnectionState GetConnectionState() const;
+    ConnectionError GetConnectionError() const;
+    ConnectionState SetConnectionState(const ConnectionState& new_state);
+    ConnectionError SetConnectionError(const ConnectionError& error);
 
-    ConnectionState
-    GetConnectionState() const;
-
-    ConnectionError
-    GetConnectionError() const;
+    
 
 protected:
-    virtual
-    ConnectionError
-    RunOnce() = 0;
+    virtual ConnectionError RunOnce() = 0;
 
-    virtual
-    void
-    StopImpl() = 0;
+    virtual void StopImpl() = 0;
+    virtual void SubscribeImpl(const std::string& topic) = 0;
+    virtual ConnectionError SendImpl(const std::string& topic, const std::string& message) = 0;
 
-    virtual
-    ConnectionError
-    SendImpl(
-        const std::string& message
-    ) = 0;
-
-    void
-    MessageReceived(
+    void MessageReceived(
         const std::string& source,
         const std::string& message
     );
+
 
     void
     GlobalConnectionStateChanged(
@@ -100,15 +87,6 @@ protected:
     );
 
 private:
-    ConnectionState
-    SetConnectionState(
-        const ConnectionState& new_state
-        );
-
-    ConnectionError
-    SetConnectionError(
-        const ConnectionError& error
-        );
 
     ConnectionState     m_connection_state;
     ConnectionError     m_connection_error;
@@ -119,13 +97,14 @@ private:
 
 class TransportListener
 {
+
 public:
-    virtual
-    void
-    MessageReceived(
+
+    virtual void MessageReceived(
         const std::string& source,
         const std::string& message
         ) = 0;
+
 
     virtual
     void
@@ -134,6 +113,7 @@ public:
         const Transport::ConnectionError& error
         ) = 0;
 
+
     virtual
     void
     RemoteSourcePresenceStateChanged(
@@ -141,7 +121,6 @@ public:
         const Transport::ConnectionState& new_state,
         const Transport::ConnectionError& error
         ) = 0;
-};
 
-#endif // TRANSPORT_H_
+};
 

@@ -45,6 +45,8 @@ MqttTransport::MqttTransport( TransportListener*    listener) : Transport( liste
         printf("Mosquitto Loop Start Ack Result: %s\n\n", mosquitto_strerror(_return));
 
         this->SetConnectionState(connected);
+        this->GlobalConnectionStateChanged(connected, none);
+   
     }
 }
 

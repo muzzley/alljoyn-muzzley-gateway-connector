@@ -17,7 +17,7 @@
 #include "app/ConfigServiceListenerImpl.h"
 #include "app/SrpKeyXListener.h"
 #include "app/ConfigParser.h"
-#include "common/xmppconnutil.h"
+#include "common/muzzleyconnutil.h"
 #include "AboutObjApi.h"
 #include "SimpleBusObject.h"
 #include <iostream>
@@ -53,6 +53,7 @@ ConfigServiceListenerImpl::ConfigServiceListenerImpl(
     if ( ER_OK != status ){
         LOG_RELEASE("Failed to enable AllJoyn Peer Security! Reason: %s", QCC_StatusText(status));
     }
+    
 }
 
 QStatus ConfigServiceListenerImpl::Restart()

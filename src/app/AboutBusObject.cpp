@@ -15,7 +15,6 @@
  */
 
 #include "AboutBusObject.h"
-#include "common/xmppconnutil.h"
 #include "RemoteBusAttachment.h"
 
 using namespace ajn::services;

@@ -19,7 +19,7 @@
 #pragma once
 
 #include "ConfigDataStore.h"
-#include "app/XMPPConnector.h"
+#include "app/MUZZLEYConnector.h"
 #include "common/CommonBusListener.h"
 
 #include <alljoyn/config/ConfigService.h>
