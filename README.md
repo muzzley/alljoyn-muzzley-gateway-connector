@@ -149,12 +149,12 @@ export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/usr/$TARGET/lib/
 export PATH=$PATH:/usr/$TARGET/bin
 ```
 
-7) Open a command terminal and from under the core/alljoyn/ directory, run the command **scons** to build the core modules for x86_64 target.
+7) Open a command terminal and from under the **core/alljoyn/** directory, run the command **scons** to build the core modules for x86_64 target.
 ```
 scons V=1 OS=linux CPU=x86_64 BINDINGS="cpp" WS=off SERVICES="about,notification,controlpanel,config,onboarding,sample_apps"
 ```
 
-8) Open a command terminal and from under the core/gwagent/ directory, run the command **scons** to build the lighting service framework for x86_64 target.
+8) Open a command terminal and from under the **core/gwagent/** directory, run the command **scons** to build the gateway agent fot x86_64 target.
 ```
 scons V=1 OS=linux CPU=x86_64 BINDINGS="cpp" WS=off SERVICES="about,notification,controlpanel,config,onboarding,sample_apps"
 ```
@@ -181,7 +181,7 @@ sudo service alljoyn start
 ```
 
 4) Next set up the configuration file:
-In the terminal navigate to the /etc/muzzleyconn folder and then open the muzzleyconn\_factory.conf file as superuser to edit it.
+In the terminal navigate to the **/etc/muzzleyconn** folder and then open the **muzzleyconn\_factory.conf** file as superuser to edit it.
 ```
 sudo gedit /etc/muzzleyconn/muzzleyconn_factory.conf
 ```
