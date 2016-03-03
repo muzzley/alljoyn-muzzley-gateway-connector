@@ -164,6 +164,59 @@ scons V=1 OS=linux CPU=x86_64 BINDINGS="cpp" WS=off SERVICES="about,notification
 scons V=1 OS=linux CPU=x86_64 BINDINGS="cpp" WS=off SERVICES="about,notification,controlpanel,config,onboarding,sample_apps" -c
 ```
 
+### Running as a normal AllJoyn application
+
+When running as a normal AllJoyn application without the Gateaway Agent it is unnecessary for the gateway agent to be running.
+In this case just make sure the alljoyn-daemon is running.
+
+If the instructions were followed according to the above Wiki article the daemon should already exist.
+It can be started as follows:
+```
+sudo service alljoyn start
+```
+
+Then the muzzleyconn application can run directly if desired.
+```
+./muzzleyconn
+```
+
+Next set up the configuration file:
+
+In the terminal navigate to the /etc/muzzleyconn folder and then open the muzzleyconn\_factory.conf file as superuser to edit it.
+```
+sudo gedit /etc/muzzleyconn/muzzleyconn_factory.conf
+```
+These arguments can be optionally modified as needed:
+```
+Verbosity - level of debug output verbosity. Can be 0, 1, or 2, with 2 being the most verbose
+Compress - whether or not to compress the body of each message. This is recommended, and must match what the paired device is doing.
+```
+    
+The file looks like the following:
+```
+{
+    "ProductID": "Your Product ID",
+    "SerialNumber": "Your Serial Number",
+    "DeviceName" : "My Device Name",
+    "AppName" : "AllJoyn XMPP Connector",
+    "Manufacturer" : "My Manufacturer Name",
+    "ModelNumber" : "My Model Number",
+    "Description" : "Description of my device",
+    "DateOfManufacture" : "1970-01-01",
+    "SoftwareVersion" : "0.0.1",
+    "HardwareVersion" : "0.0.1",
+    "SupportUrl" : "http://www.example.org",
+    "Verbosity":"2",
+    "Compress":"1"
+}
+```
+
+Save and close the file. Now copy that file to /etc/muzzleyconn/muzzleyconn.conf as follows:
+```
+sudo cp /etc/muzzleyconn/muzzleyconn_factory.conf /etc/muzzleyconn/muzzleyconn.conf
+``` 
+
+You are now ready to connect the muzzleyconn connector to the Muzzley cloud.
 
 #Build Instructions for OpenWRT
 
