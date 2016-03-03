@@ -189,23 +189,22 @@ sudo gedit /etc/muzzleyconn/muzzleyconn_factory.conf
 These arguments can be optionally modified as needed:
 ```
 Verbosity - level of debug output verbosity. Can be 0, 1, or 2, with 2 being the most verbose
-Compress - whether or not to compress the body of each message. This is recommended, and must match what the paired device is doing.
 ```
     
 The file looks like the following:
 ```
 {
-    "ProductID": "Your Product ID",
-    "SerialNumber": "Your Serial Number",
-    "DeviceName" : "My Device Name",
-    "AppName" : "AllJoyn XMPP Connector",
-    "Manufacturer" : "My Manufacturer Name",
-    "ModelNumber" : "My Model Number",
-    "Description" : "Description of my device",
-    "DateOfManufacture" : "1970-01-01",
+    "ProductID": "muzzleyconn",
+    "SerialNumber": "muzzleyconn01",
+    "DeviceName" : "MuzzleyConnector",
+    "AppName" : "Muzzley MQTT Connector",
+    "Manufacturer" : "Muzzley",
+    "ModelNumber" : "MuzzleyConnector",
+    "Description" : "Muzzley Alljoyn MQTT connecoctor",
+    "DateOfManufacture" : "1016-03-01",
     "SoftwareVersion" : "0.0.1",
     "HardwareVersion" : "0.0.1",
-    "SupportUrl" : "http://www.example.org",
+    "SupportUrl" : "http://www.muzzley.com",
     "Verbosity":"2",
     "Compress":"1"
 }
