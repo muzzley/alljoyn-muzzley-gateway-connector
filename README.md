@@ -191,7 +191,8 @@ The file looks like the following:
     "HardwareVersion" : "0.0.1",
     "SupportUrl" : "http://www.muzzley.com",
     "Verbosity":"2",
-    "Compress":"1"
+    "Server": "cloud-services.muzzley.com",
+    "Port": 5000
 }
 ```
 
