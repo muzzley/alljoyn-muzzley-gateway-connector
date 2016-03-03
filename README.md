@@ -394,7 +394,9 @@ sudo cp $ROOTPATH/muzzleyconn/Manifest.xml /opt/alljoyn/apps/muzzleyconn
 6) The Gateway Connector app needs a configuration file. Copy your muzzleyconn_factory.conf file to: **/opt/alljoyn/apps/muzzleyconn/etc/muzzleyconn_factory.conf**.
 Note that the "store" and "acls" subdirectories will remain empty for now. You are now ready to execute muzzleyconn as a Gateway Connector app.
 
-#### Running the Gateway Connector
+#### Running the MUZZLEYCONN with the Gateway Agent (Working on it..)
+
+### On the x86_64 target
 
 1) Start the Gateway Agent:
 ```
@@ -406,41 +408,52 @@ sudo service alljoyn-gwagent start
 sudo service alljoyn-gwagent status
 ``` 
 
-3) The instructions for downloading and running the Gateway Connector app are on the AllSeen Alliance website at ["Installing the Gateway Controller Sample Android App"](https://wiki.allseenalliance.org/gateway/getting\_started#installing\_the\_gateway\_controller\_sample\_android\_app). After installing the app, open it and click on AllJoyn Gateway Configuration Manager. You should see "Muzzley Connector" (a button that says Affin...) in the Gateway Connector Applications list. At this point, the state of the app should show "Stopped". This is because we haven't created any Access Control Lists (ACL's) yet.
+### On the OpenWRT target
+
+1) Start the Gateway Agent:
+```
+alljoyn-gwagent
+``` 
+
+2) Verify that it is running:
+```
+ps -ef | grep alljoyn-gateway
+``` 
+
+3) The instructions for downloading and running the Gateway Connector Appplication on the Android are on the AllSeen Alliance website.
+After installing the app, open it and click on AllJoyn Gateway Configuration Manager.
+You should see "Alljoyn Muzzley Connector" in the Gateway Connector Applications list.
+At this point, the state of the app should show "Stopped".
+This is because we haven't created any Access Control Lists (ACL's) yet.
 
 #### Creating an ACL
 
 1) Click on the "Muzzley" button to open the MQTT Connector app. Using the context menu on your Android device, click on "Create ACL".
 This will open up a window where you choose a name for your ACL, and choose which services will be allowed to pass through muzzleyconn.
-For now, select the "Expose all services" checkbox, since we want to ensure that the muzzleyconn app works just as the command-line muzzleyconn. Click on "Create".
+For now, select the "Expose all services" checkbox, since we want to ensure that the muzzleyconn app works just as the command-line muzzleyconn.
+Click on "Create".
 
-2) Go back to the previous window (the Muzzley Connector app). You will see that it still shows up as "Stopped". First, you need to make sure that the newly created ACL is in the "Active" state. Then, from the Linux command line, restart the Gateway Agent:
-```
-sudo service alljoyn-gwagent restart
-``` 
 
-3) Verify that it is running:
-```
-sudo service alljoyn-gwagent status
-``` 
+2) Go back to the previous window (the Muzzley Connector app). You will see that it still shows up as "Stopped".
+First, you need to make sure that the newly created ACL is in the "Active" state.
+Then, from the Linux command line, restart the Gateway Agent, and verify the it is running.
 
-NOTE: It is possible that the Gateway Agent is not running at this point (you might see the message "The process appears to be dead but pidfile still exists"). If this happens, you will need to restart the AllJoyn service, and then restart the Gateway Agent:
-```
-sudo service alljoyn restart
-sudo service alljoyn-gwagent restart
-``` 
+NOTE: It is possible that the Gateway Agent is not running at this point (you might see the message "The process appears to be dead but pidfile still exists"). 
+If this happens, you will need to restart the AllJoyn service, and then restart the Gateway Agent:
 
 4) The Gateway Agent should now be running.
 
 
-#### Verifying the Muzzley connector
+#### Running the MUZZLEYCONN as standalone
 
-In the Gateway Connector app, you should now see the MQTT connector status as "Running". On your Linux system, you should also be able to see it from the process list:
+1) Start the Muzzley Connector, simply running it:
 ```
-ps -ef | grep muzzleyconn
-muzzleyconn 26639 26502 16 17:03 ? 00:00:12 [muzzleyconn]
-alljoyn 29748 9804 0 17:04 pts/0 00:00:00 grep --color=auto muzzleyconn
-``` 
+cd /opt/alljoyn/apps/muzzleyconn/bin
+./muzzleyconn
+```
+
+2) Check the logs for any error.
+
 
 ## License
 
