@@ -1,16 +1,16 @@
 ## Muzzley-Alljoyn Gateway Connector
 
-muzzleyconn is an application that connects local Alljoyn networks with Muzzley Cloud services over MQTT.
+`muzzleyconn` is an application that connects local AllJoyn networks with Muzzley Cloud services over MQTT.
 See http://allseenalliance.org for more information about AllJoyn, and http://muzzley.com for more information about Muzzley.
 
 ## Motivation
 
 Normally an AllJoyn device can only communicate with other AllJoyn devices from within a local network.
-This application sends AllJoyn traffic over an MQTT connection to Muzzley cloud services, and announce Muzzley compatible alljoyn devices over UPNP. This allows, for instance, a mobile phone running the Muzzley App to add those devices to the users Muzzley account, and continue to communicate with those devices even when not connected to the local AllJoyn network via WiFi.
+This application sends AllJoyn traffic over an MQTT connection to Muzzley cloud services, and announces Muzzley compatible AllJoyn devices over UPnP. This allows, for instance, a mobile phone running the Muzzley App to add those devices to the user's Muzzley account, and continue to communicate with those devices even when not connected to the local AllJoyn network via WiFi.
 
 ## Building from Source
 
-Building the source code requires first setting up dependencies and then using **scons** to produce the binaries.
+Building the source code requires first setting up dependencies and then using `scons` to produce the binaries.
 
 ### Dependencies
 
@@ -27,14 +27,16 @@ The following dependencies must be obtained and installed:
 * mosquitto-dev
 * RapidJSON
 * AllJoyn Gateway Agent
-* Alljoyn Core
+* AllJoyn Core
 
 #### libcap
+
 ```
 sudo apt-get install libcap-dev
 ```
 
 #### libxml2
+
 ```
 sudo apt-get update
 sudo apt-get install libxml2-dev
@@ -43,6 +45,7 @@ export LIBXML2_LIBDIR = "/usr/lib"
 ```
 
 #### libGlib
+
 ```
 sudo apt-get install libglib2.0-dev 
 export LIBGLIB_INCDIR = "/usr/include/glib-2.0"
@@ -50,43 +53,48 @@ export LIBGLIB_LIBDIR = "/usr/lib"
 ```
 
 #### libSoup
-```	
+
+``` 
 sudo apt-get install libsoup2.4-dev
 export LIBSOUP_INCDIR = "/usr/include/libsoup-2.4"
 ```
 
 #### libGupnp
+
 ```
 sudo apt-get install libgupnp-1.0-dev
 export LIBGUPNP_INCDIR = "/usr/include/gupnp-1.0"
 ```
 
 #### libGssdp
+
 ```
 sudo apt-get install libgssdp-1.0-dev
 export LIBGSSDP_INCDIR = /usr/include/gssdp-1.0
-```	
+``` 
 
 #### RapidJSON
 
 It is necessary to download the RapidJSON source code (building is not necessary since the library is header-only).
 Source code can be downloaded from https://github.com/miloyip/rapidjson.git.
-After downloading, the RAPIDJSON\_INCDIR environment variable must be defined before building muzzleyconn.
+After downloading, the RAPIDJSON\_INCDIR environment variable must be defined before building `muzzleyconn`.
 For example, if your RapidJSON source code folder is RAPIDJSON\_ROOT, then RAPIDJSON\_INCDIR needs to point to $RAPIDJSON\_ROOT/include:
+
 ```
 export RAPIDJSON_INCDIR = $RAPIDJSON_ROOT/include
 ```
 
 #### Mosquitto
+
 ```
 sudo apt-get install mosquitto-dev
 export LIBMOSQUITTO_INCDIR = "/usr/include"
 export LIBMOSQUITTO_LIBDIR = "/usr/lib"
 ```
 
-#Build Instructions for x86_64
+# Build Instructions for x86_64
 
-1) Follow the instructions in [here](https://allseenalliance.org/framework/documentation/develop/building/linux/build-source) to set up your ubuntu machine to build AllJoyn.
+1) Follow the instructions in [here](https://allseenalliance.org/framework/documentation/develop/building/linux/build-source) to set up your Ubuntu machine to build AllJoyn.
 
 2) Create a new folder named "alljoyn-muzzley" on your home directory.
 
@@ -95,13 +103,13 @@ export LIBMOSQUITTO_LIBDIR = "/usr/lib"
 ```
 core/
 
-    gwagent/   (https://git.allseenalliance.org/gerrit/gateway/gwagent.git)
-     		   (git checkout RB14.12b)
+    gwagent/  (https://git.allseenalliance.org/gerrit/gateway/gwagent.git)
+              (git checkout RB14.12b)
 
-	ajtcl/   (https://git.allseenalliance.org/gerrit/core/ajtcl.git)
-             (git checkout RB14.12b)
-	alljoyn/ (https://git.allseenalliance.org/gerrit/core/alljoyn.git)
-			 (git checkout RB14.12b)
+    ajtcl/    (https://git.allseenalliance.org/gerrit/core/ajtcl.git)
+              (git checkout RB14.12b)
+    alljoyn/  (https://git.allseenalliance.org/gerrit/core/alljoyn.git)
+              (git checkout RB14.12b)
 
 base_tcl/ (https://git.allseenalliance.org/gerrit/services/base_tcl.git)
 
@@ -111,18 +119,18 @@ base/ (https://git.allseenalliance.org/gerrit/services/base.git)
 services/
 
        base_tcl/ (https://git.allseenalliance.org/gerrit/services/base_tcl.git)
-       (git checkout RB14.12b)
+                 (git checkout RB14.12b)
 
        base/ (https://git.allseenalliance.org/gerrit/services/base.git)
-       (git checkout RB14.12b)
+             (git checkout RB14.12b)
 
 ```
 
-4)  Open a command terminal and from under the **core/gwagent/cpp** directory, clone this repository.
+4)  Open a command terminal and from under the `core/gwagent/cpp` directory, clone this repository.
 
-5) Rename connetor folder for a more friendly name like "MuzzleyConnector", and open the SConscript file under the core/gwagent/cpp directory, and add the same folder name to the array **gateway_dirs**.
+5) Rename connector folder for a more friendly name like "MuzzleyConnector", and open the SConscript file under the `core/gwagent/cpp directory`, and add the same folder name to the array `gateway_dirs`.
 
-6) Export the following ambient variables to setup your x86/64 build environment.
+6) Export the following environment variables to setup your x86/64 build environment.
 
 ```
 export TARGET_OS="linux"
@@ -150,33 +158,40 @@ export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/usr/$TARGET/lib/
 export PATH=$PATH:/usr/$TARGET/bin
 ```
 
-7) Open a command terminal and from under the **core/alljoyn/** directory, run the command **scons** to build the core modules for x86_64 target.
+7) Open a command terminal and from under the `core/alljoyn/` directory, run the command `scons` to build the core modules for x86_64 target.
+
 ```
 scons V=1 OS=linux CPU=x86_64 BINDINGS="cpp" WS=off SERVICES="about,notification,controlpanel,config,onboarding,sample_apps"
 ```
 
-8) Open a command terminal and from under the **core/gwagent/** directory, run the command **scons** to build the gateway agent fot x86_64 target.
+8) Open a command terminal and from under the `core/gwagent/` directory, run the command `scons` to build the gateway agent for x86_64 target.
+
 ```
 scons V=1 OS=linux CPU=x86_64 BINDINGS="cpp" WS=off SERVICES="about,notification,controlpanel,config,onboarding,sample_apps"
 ```
 
-9) If needed, run the following **scons** command to clean the build files
+9) If needed, run the following `scons` command to clean the build files
+
 ```
 scons V=1 OS=linux CPU=x86_64 BINDINGS="cpp" WS=off SERVICES="about,notification,controlpanel,config,onboarding,sample_apps" -c
 ```
 
-10) Next set up the configuration file:
-In the terminal navigate to the **/etc/muzzleyconn** folder and then open the **muzzleyconn\_factory.conf** file as superuser to edit it.
+10) Next, set up the configuration file:
+
+In the terminal navigate to the `/etc/muzzleyconn` folder and then open the `muzzleyconn\_factory.conf` file as superuser to edit it.
+
 ```
 sudo gedit /etc/muzzleyconn/muzzleyconn_factory.conf
 ```
 
 11) These arguments can be optionally modified as needed:
+
 ```
 Verbosity - level of debug output verbosity. Can be 0, 1, or 2, with 2 being the most verbose
 ```
     
 The file looks like the following:
+
 ```
 {
     "ProductID": "muzzleyconn",
@@ -185,7 +200,7 @@ The file looks like the following:
     "AppName" : "Muzzley MQTT Connector",
     "Manufacturer" : "Muzzley",
     "ModelNumber" : "MuzzleyConnector",
-    "Description" : "Muzzley Alljoyn MQTT connector",
+    "Description" : "Muzzley AllJoyn MQTT connector",
     "DateOfManufacture" : "2016-03-01",
     "SoftwareVersion" : "0.0.1",
     "HardwareVersion" : "0.0.1",
@@ -196,47 +211,53 @@ The file looks like the following:
 }
 ```
 
-12) Save and close the file. Now copy that file to /etc/muzzleyconn/muzzleyconn.conf as follows:
+12) Save and close the file. Now copy that file to `/etc/muzzleyconn/muzzleyconn.conf` as follows:
+
 ```
 sudo cp /etc/muzzleyconn/muzzleyconn_factory.conf /etc/muzzleyconn/muzzleyconn.conf
 ``` 
 
-13) You are now ready to connect the muzzleyconn connector to the Muzzley cloud.
+13) You are now ready to connect the `muzzleyconn` connector to the Muzzley cloud.
 
 
-#Build Instructions for OpenWRT
+# Build Instructions for OpenWRT
 
 #### Prepare the OpenWRT Toolchain 
 
 1) Download the OpenWRT source code from: 
+
 ```
 git clone git://git.openwrt.org/14.07/openwrt.git
 ```
 
-2) Download the config file for the correspondent hardware where the OpenWRT will be run from [here](https://downloads.openwrt.org) and paste it on the root of the openwrt project.
+2) Download the config file for the correspondent hardware where OpenWRT will be run from [here](https://downloads.openwrt.org) and paste it on the root of the openwrt project.
 
-3) Copy downloaded config file to .config (for example):
+3) Copy downloaded config file to `.config` (for example):
+
 ```
 cp config.ar71xx_generic .config
 ```
 
-4) Copy feeds.conf.default to feeds.conf (if not already done):
+4) Copy `feeds.conf.default` to `feeds.conf` (if not already done):
+
 ```
 cp feeds.conf.default feeds.conf
 ```
 
 5) Add the following line to the end of the file:
+
 ```
 src-git alljoyn https://git.allseenalliance.org/gerrit/core/openwrt_feed;barrier_breaker
-
 ```
 
 6) Update the feed information:
+
 ```
 ./scripts/feeds update -a
 ```
     
-7) Add the the packages from the feeds to build system (luci interface is not needed but recommended to configure the router using a web interface):
+7) Add the the packages from the feeds to build system (`luci` interface is not needed but recommended to configure the router using a web interface):
+
 ```
 ./scripts/feeds install -a -p alljoyn
 ./scripts/feeds install libgupnp
@@ -245,6 +266,7 @@ src-git alljoyn https://git.allseenalliance.org/gerrit/core/openwrt_feed;barrier
 ```
 
 8) Enable AllJoyn in the build:
+
 ```
 make menuconfig
 ```
@@ -279,15 +301,16 @@ make menuconfig
 ```
 
 9) Make the firmware image including the correspondent configuration using the command:
+
 ```
 make
 ```
 
 10) Flash it in the router firmware and wait for reboot.
 
-#### Compiling MUZZLEYCONN connector
+#### Compiling the `muzzleyconn` connector
 
-1) Export the following ambient variables to setup your openwrt build environment.
+1) Export the following ambient variables to setup your OpenWRT build environment.
 
 ```
 export TARGET_OS="openwrt"
@@ -321,18 +344,20 @@ export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/usr/$TARGET/lib/
 export PATH=$PATH:/usr/$TARGET/bin
 ```
 
-**NOTE:** Before building, make sure that **TARGET**, **RAPIDJSON\_INCDIR**, **LIBGLIB_INCDIR**, **LIBGLIB_LIBDIR**, **MOSQUITTO_INCDIR** and **MOSQUITTO_LIBDIR** are set appropriately, accordingly with your hardware architecture.
-For ex.: **mips-openwrt-linux-uclibc**
+**NOTE:** Before building, make sure that `TARGET`, `RAPIDJSON\_INCDIR`, `LIBGLIB_INCDIR`, `LIBGLIB_LIBDIR`, `MOSQUITTO_INCDIR` and `MOSQUITTO_LIBDIR` are set appropriately, accordingly with your hardware architecture.
 
-The following commands are targgted for a **mips-openwrt-linux-uclibc** hardware architecture.
-Some command changes may by needed for a different architecture.
+For ex.: `mips-openwrt-linux-uclibc`
 
-2) To compile the connector open a new terminal window under **~/alljoyn-muzzley/core/gwagent/**, and run the following **scons** compile command:
+The following commands are targeted for a `mips-openwrt-linux-uclibc` hardware architecture. Some command changes may by needed for a different architecture.
+
+2) To compile the connector open a new terminal window under `~/alljoyn-muzzley/core/gwagent/`, and run the following `scons` compile command:
+
 ```
 scons V=1 ICE=off BR=on BT=off WS=off CPU=openwrt OS=openwrt BINDINGS="cpp" SERVICES="about,notification,controlpanel,config,onboarding,sample_apps" TARGET_CFLAGS="-Os -pipe -mips32r2 -mtune=74kc -fPIC -fno-caller-saves -fhonour-copts -Wno-error=unused-but-set-variable -msoft-float" "TARGET_CC=$TARGET-gcc" "TARGET_CXX=$TARGET-g++" "TARGET_AR=$TARGET-ar" "TARGET_RANLIB=$TARGET-ranlib" "TARGET_LINK=$TARGET-gcc" "TARGET_CPPFLAGS=-I$OPENWRT_TARGET_BASE/usr/include -I$OPENWRT_TARGET_BASE/include -I$OPENWRT_TOOLCHAIN_BASE/usr/include -I$OPENWRT_TOOLCHAIN_BASE/include" "TARGET_PATH=$OPENWRT_TOOLCHAIN_BASE/bin:$OPENWRT_BASE/staging_dir/host/bin:$PATH" "STAGING_DIR=$OPENWRT_TARGET_BASE" "TARGET_LINKFLAGS=-L$OPENWRT_TARGET_BASE/usr/lib" "CXXFLAGS=$CXXFLAGS -I$AJ_DIST/cpp/inc -I$AJ_DIST/about/inc -I$AJ_DIST/services_common/inc -I$AJ_DIST/notification/inc -I$AJ_DIST/controlpanel/inc -I$AJ_DIST/services_common/inc" "LDFLAGS=$LDFLAGS -L$AJ_DIST/cpp/lib -L$AJ_DIST/about/lib -L$AJ_DIST/services_common/lib -L$AJ_DIST/notification/lib -L$AJ_DIST/controlpanel/lib"
 ```
 
-3) To clean the build environment, just add a "-c" at the end of the previous command.
+3) To clean the build environment, just add a `-c` at the end of the previous command.
+
 ```
 scons V=1 ICE=off BR=on BT=off WS=off CPU=openwrt OS=openwrt BINDINGS="cpp" SERVICES="about,notification,controlpanel,config,onboarding,sample_apps" TARGET_CFLAGS="-Os -pipe -mips32r2 -mtune=74kc -fPIC -fno-caller-saves -fhonour-copts -Wno-error=unused-but-set-variable -msoft-float" "TARGET_CC=$TARGET-gcc" "TARGET_CXX=$TARGET-g++" "TARGET_AR=$TARGET-ar" "TARGET_RANLIB=$TARGET-ranlib" "TARGET_LINK=$TARGET-gcc" "TARGET_CPPFLAGS=-I$OPENWRT_TARGET_BASE/usr/include -I$OPENWRT_TARGET_BASE/include -I$OPENWRT_TOOLCHAIN_BASE/usr/include -I$OPENWRT_TOOLCHAIN_BASE/include" "TARGET_PATH=$OPENWRT_TOOLCHAIN_BASE/bin:$OPENWRT_BASE/staging_dir/host/bin:$PATH" "STAGING_DIR=$OPENWRT_TARGET_BASE" "TARGET_LINKFLAGS=-L$OPENWRT_TARGET_BASE/usr/lib" "CXXFLAGS=$CXXFLAGS -I$AJ_DIST/cpp/inc -I$AJ_DIST/about/inc -I$AJ_DIST/services_common/inc -I$AJ_DIST/notification/inc -I$AJ_DIST/controlpanel/inc -I$AJ_DIST/services_common/inc" "LDFLAGS=$LDFLAGS -L$AJ_DIST/cpp/lib -L$AJ_DIST/about/lib -L$AJ_DIST/services_common/lib -L$AJ_DIST/notification/lib -L$AJ_DIST/controlpanel/lib" -c
 ```
@@ -341,7 +366,8 @@ scons V=1 ICE=off BR=on BT=off WS=off CPU=openwrt OS=openwrt BINDINGS="cpp" SERV
 
 **Note:** An AllJoyn daemon must be running on the same local system for this program to work. Refer to http://wiki.allseenalliance.org/gateway/getting\_started to learn how to set up your system with the proper AllJoyn dependencies.
 
-1) You need to create a directory structure for the muzzleyconn app:
+1) You need to create a directory structure for the `muzzleyconn` app:
+
 ```
 sudo mkdir -p /opt/alljoyn/apps/muzzleyconn/acls
 sudo mkdir -p /opt/alljoyn/apps/muzzleyconn/bin
@@ -350,46 +376,52 @@ sudo mkdir -p /opt/alljoyn/apps/muzzleyconn/store
 sudo mkdir -p /opt/alljoyn/apps/muzzleyconn/etc
 ```
 
-2) Under Gateway Connector, the muzzleyconn process will be run as "muzzleyconn" user. It needs to be able to write to the "etc" subdirectory. Since we created the directory structure above as root (sudo), change the owner and the group of that directory:
+2) Under Gateway Connector, the `muzzleyconn` process will be run as the "muzzleyconn" user. It needs to be able to write to the `etc` subdirectory. Since we created the directory structure above as root (sudo), change the owner and the group of that directory:
+
 ```
 sudo chown -R muzzleyconn /opt/alljoyn/apps/muzzleyconn
 sudo chgrp -R muzzleyconn /opt/alljoyn/apps/muzzleyconn
 ```
 
-3) Copy the resulting executable, to the "bin" subdirectory of muzzleyconn app:
+3) Copy the resulting executable, to the `bin` subdirectory of `muzzleyconn` app:
+
 ```
 sudo cp $ROOTPATH/muzzleyconn/build/muzzleyconn /opt/alljoyn/apps/muzzleyconn/bin
 ```
 
 4) Copy the Manifest file to the top-level muzzleyconn app directory:
+
 ```
 sudo cp $ROOTPATH/muzzleyconn/Manifest.xml /opt/alljoyn/apps/muzzleyconn
 ```
 
-5) The Manifest file has to be modified to allow the muzzleyconn process to be run as "muzzleyconn" user. Add the following line after the <env_variables> line:
+5) The Manifest file has to be modified to allow the `muzzleyconn` process to be run as the "muzzleyconn" user. Add the following line after the <env_variables> line:
+
 ```
 <variable name="HOME">/home/muzzleyconn</variable>
 ```
 
-6) The Gateway Connector app needs a configuration file. Copy your muzzleyconn_factory.conf file to: **/opt/alljoyn/apps/muzzleyconn/etc/muzzleyconn_factory.conf**.
-Note that the "store" and "acls" subdirectories will remain empty for now. You are now ready to execute muzzleyconn as a Gateway Connector app.
+6) The Gateway Connector app needs a configuration file. Copy your `muzzleyconn_factory.conf` file to `/opt/alljoyn/apps/muzzleyconn/etc/muzzleyconn_factory.conf`.
 
+Note that the `store` and `acls` subdirectories will remain empty for now. You are now ready to execute `muzzleyconn` as a Gateway Connector app.
 
-#### Running the MUZZLEYCONN with the Gateway Agent
+#### Running the `muzzleyconn` with the Gateway Agent
 
 **NOTE: The actual implementation on the Muzzley Connector is not properly working as a Gateway Connector at this moment.
-Please, skip this steps and follow the instructions bellow to run it as a standalone application. 
-On the OpenWRT target, it is likely that the Alljoyn Gateway Agent starts automatically. 
+Please skip this steps and follow the instructions bellow to run it as a standalone application. 
+On the OpenWRT target, it is likely that the AllJoyn Gateway Agent starts automatically. 
 In this case the Muzlzey connector process must be killed and started manually again.**
 
 ##### On the x86_64 target
 
 1) Start the Gateway Agent:
+
 ```
 sudo service alljoyn-gwagent start
 ``` 
 
 2) Verify that it is running:
+
 ```
 sudo service alljoyn-gwagent status
 ``` 
@@ -397,40 +429,36 @@ sudo service alljoyn-gwagent status
 ##### On the OpenWRT target
 
 1) Start the Gateway Agent:
+
 ```
 alljoyn-gwagent
 ``` 
 
 2) Verify that it is running:
+
 ```
 ps -ef | grep alljoyn-gateway
 ``` 
 
-3) The instructions for downloading and running the Gateway Connector Appplication on the Android are on the AllSeen Alliance website.
-After installing the app, open it and click on AllJoyn Gateway Configuration Manager.
-You should see "Alljoyn Muzzley Connector" in the Gateway Connector Applications list.
-At this point, the state of the app should show "Stopped".
-This is because we haven't created any Access Control Lists (ACL's) yet.
+3) The instructions for downloading and running the Gateway Connector Appplication on Android are on the AllSeen Alliance website.After installing the app, open it and click on AllJoyn Gateway Configuration Manager. You should see "AllJoyn Muzzley Connector" in the Gateway Connector Applications list. At this point, the state of the app should show "Stopped". This is because we haven't created any Access Control Lists (ACL's) yet.
 
 #### Creating an ACL
 
 1) Click on the "Muzzley" button to open the MQTT Connector app. Using the context menu on your Android device, click on "Create ACL".
-This will open up a window where you choose a name for your ACL, and choose which services will be allowed to pass through muzzleyconn.
-For now, select the "Expose all services" checkbox, since we want to ensure that the muzzleyconn app works just as the command-line muzzleyconn.
+This will open up a window where you choose a name for your ACL, and choose which services will be allowed to pass through `muzzleyconn`.
+For now, select the "Expose all services" checkbox, since we want to ensure that the `muzzleyconn` app works just as the command-line `muzzleyconn`.
 Click on "Create".
-
 
 2) Go back to the previous window (the Muzzley Connector app). You will see that it still shows up as "Stopped".
 First, you need to make sure that the newly created ACL is in the "Active" state.
 Then, from the Linux command line, restart the Gateway Agent, and verify the it is running.
 
 NOTE: It is possible that the Gateway Agent is not running at this point (you might see the message "The process appears to be dead but pidfile still exists"). 
-If this happens, you will need to restart the AllJoyn service, and then restart the Gateway Agent:
+If this happens, you will need to restart the AllJoyn service, and then restart the Gateway Agent.
 
 4) The Gateway Agent should now be running.
 
-
-#### Running the MUZZLEYCONN as standalone
+#### Running `muzzleyconn` as standalone
 
 ##### On the x86_64 target
 
@@ -439,11 +467,12 @@ In this case just make sure the alljoyn-daemon is running.
 
 2) If the instructions were followed according to the above Wiki article the daemon should already exist.
 It can be started as follows:
+
 ```
 sudo service alljoyn start
 ```
 
-3) Then the muzzleyconn application can be run directly if desired.
+3) Then the `muzzleyconn` application can be run directly if desired.
 ```
 ./muzzleyconn
 ```
@@ -452,13 +481,13 @@ sudo service alljoyn start
 ##### On the OpenWRT target
 
 1) Start the Muzzley Connector, simply running it:
+
 ```
 cd /opt/alljoyn/apps/muzzleyconn/bin
 ./muzzleyconn
 ```
 
 2) Check the logs for any error.
-
 
 ## License
 
