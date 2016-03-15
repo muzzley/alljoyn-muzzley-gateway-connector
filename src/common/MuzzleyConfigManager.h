@@ -48,6 +48,7 @@ class MuzzleyConfigManager {
     int get_muzzley_subscription_channelid_pos(string channelid);
     int get_muzzley_subscription_componentid_pos(string componentid);
     bool del_muzzley_subscription_pos(int pos);
+
     string read_muzzley_devicekey_file(string filepath);
     void write_muzzley_devicekey_file(string filepath, string deviceKey);
 

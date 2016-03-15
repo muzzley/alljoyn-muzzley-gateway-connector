@@ -252,9 +252,7 @@ private:
 
     Transport* auth_transport;
     Transport* m_transport;
-    
-    //MQTTtransport* mqtt_trans;
- 
+
     // Originally XmppTranport code, moved into MUZZLEYConnector
     void
         NameOwnerChanged(

@@ -702,6 +702,11 @@ MUZZLEYConnector::MUZZLEYConnector(
             MUZZLEYConnector::RemoteSourcePresenceStateChanged("Controlle", m_transport->connected, m_transport->none);
             MUZZLEYConnector::RemoteSourcePresenceStateChanged("LIFX Color 1000", m_transport->connected, m_transport->none);
 
+            pthread_mutex_init(&m_remoteAttachmentsMutex, NULL);
+
+            m_propertyBus.Start();
+            m_propertyBus.Connect();
+
         	muzzley_registered = true;
         }
        
@@ -738,14 +743,6 @@ MUZZLEYConnector::MUZZLEYConnector(
         muzzley_registered = false;
 
     }
-
-
-    m_propertyBus.Start();
-    m_propertyBus.Connect();
-  
-
-    pthread_mutex_init(&m_remoteAttachmentsMutex, NULL);
-
 }
 
 MUZZLEYConnector::~MUZZLEYConnector()
@@ -3191,6 +3188,11 @@ MUZZLEYConnector::MessageReceived(
             MUZZLEYConnector::RemoteSourcePresenceStateChanged("MuzzleyConnector", m_transport->connected, m_transport->none);
             MUZZLEYConnector::RemoteSourcePresenceStateChanged("Controlle", m_transport->connected, m_transport->none);
             MUZZLEYConnector::RemoteSourcePresenceStateChanged("LIFX Color 1000", m_transport->connected, m_transport->none);
+
+            pthread_mutex_init(&m_remoteAttachmentsMutex, NULL);
+
+            m_propertyBus.Start();
+            m_propertyBus.Connect();
 
             muzzley_registered = true;
             delete auth_transport;
