@@ -39,6 +39,10 @@ private:
 
     virtual ConnectionError RunOnce();
     virtual void StopImpl();
+
+    virtual void  SetCredentialsImpl(const std::string& username, const std::string& password);
+    virtual void  ConnectImpl();
+
     virtual void SubscribeImpl(const std::string& topic);
     virtual ConnectionError SendImpl(const std::string& topic, const std::string& message);
 

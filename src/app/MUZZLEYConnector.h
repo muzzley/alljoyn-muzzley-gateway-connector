@@ -74,6 +74,8 @@ class MUZZLEYConnector : public ajn::gw::GatewayConnector, TransportListener
     bool muzzley_running;
     
     string routerid;
+    string token;
+    
     bool muzzley_registered;
     MuzzleyUPNPManager * muzzley_upnp_manager;
     MuzzleyConfigManager * muzzley_config_manager;
@@ -248,7 +250,9 @@ private:
     };
     std::map<std::string, MessageCallback> m_messageCallbackMap;
 
+    Transport* auth_transport;
     Transport* m_transport;
+    
     //MQTTtransport* mqtt_trans;
  
     // Originally XmppTranport code, moved into MUZZLEYConnector

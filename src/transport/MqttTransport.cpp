@@ -20,13 +20,8 @@
 #define QOS 0
 
 MqttTransport::MqttTransport( TransportListener*    listener) : Transport( listener ){
-    char *host = (char*)"cloud-services.muzzley.com";
-    int port = 9883;
-    int keepalive = 60;
-    bool clean_session = true;
-    
-    mosquitto_lib_init();
 
+    bool clean_session = true;
     this->mosq_trans = mosquitto_new(NULL, clean_session, listener);
     if(!this->mosq_trans){
         printf("Error: Out of memory.\n");
@@ -36,17 +31,6 @@ MqttTransport::MqttTransport( TransportListener*    listener) : Transport( liste
         mosquitto_log_callback_set(this->mosq_trans, my_log_callback);
         mosquitto_subscribe_callback_set(this->mosq_trans, my_subscribe_callback);
         mosquitto_connect_callback_set(this->mosq_trans, my_connect_callback);
-        
-        int _return;
-        _return=mosquitto_connect(this->mosq_trans, host, port, keepalive);
-        printf("Mosquitto Connect Ack Result: %s\n\n", mosquitto_connack_string(_return));
-         
-        _return = mosquitto_loop_start(this->mosq_trans);
-        printf("Mosquitto Loop Start Ack Result: %s\n\n", mosquitto_strerror(_return));
-
-        this->SetConnectionState(connected);
-        //this->GlobalConnectionStateChanged(connected, none);
-   
     }
 }
 
@@ -66,6 +50,36 @@ void MqttTransport::StopImpl(){
 
 }
 
+
+void  MqttTransport::SetCredentialsImpl(const std::string& username, const std::string& password){
+    int _return = mosquitto_username_pw_set( this->mosq_trans, username.c_str(), password.c_str());
+    printf("Mosquitto set credentials result: %s\n\n", mosquitto_strerror(_return));
+}
+
+void  MqttTransport::ConnectImpl(){
+
+    int keepalive = 60;
+
+    char *host = (char*)"cloud-services.muzzley.com";
+    int port = 9884;
+   
+    mosquitto_lib_init();
+
+    int _return;
+    _return = mosquitto_tls_set(this->mosq_trans, "/etc/ssl/certs/Go_Daddy_Class_2_CA.crt", NULL, NULL, NULL, NULL);
+    printf("Mosquitto TLS set Result: %s\n\n", mosquitto_strerror(_return));
+
+    _return = mosquitto_connect(this->mosq_trans, host, port, keepalive);
+    printf("Mosquitto Connect Ack Result: %s\n\n", mosquitto_connack_string(_return));
+     
+    _return = mosquitto_loop_start(this->mosq_trans);
+    printf("Mosquitto Loop Start Ack Result: %s\n\n", mosquitto_strerror(_return));
+
+    this->SetConnectionState(connected);
+    //this->GlobalConnectionStateChanged(connected, none);
+}
+
+
 void MqttTransport::SubscribeImpl(const string& topic){
     printf("Subscribing MQTT transport\n\n"); 
     int _return=-1;
@@ -78,6 +92,7 @@ void MqttTransport::SubscribeImpl(const string& topic){
 }
 
 Transport::ConnectionError MqttTransport::SendImpl(const string& topic, const string& message){
+    cout << "Publishing:" << endl << "Topic: " << topic << endl << "Message: " << endl << message << endl << flush;
     this->publish(this->mosq_trans, topic, message);
     Transport::ConnectionError err;
     err = none;

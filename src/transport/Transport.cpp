@@ -62,6 +62,14 @@ void Transport::Stop(){
 }
 
 
+void Transport::SetCredentials(const std::string& username, const std::string& password){
+	SetCredentialsImpl(username, password);
+}
+
+void Transport::Connect(){
+	ConnectImpl();
+}
+
 void Transport::Subscribe(const string& topic){
 	return SubscribeImpl(topic);
 }
