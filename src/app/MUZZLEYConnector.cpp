@@ -648,86 +648,101 @@ MUZZLEYConnector::MUZZLEYConnector(
     m_busInterfaceName(busInterfaceName)
 {
 
-
     muzzley_config_manager = new MuzzleyConfigManager();
+    muzzley_upnp_manager = new MuzzleyUPNPManager();
 
-    string devicekey = muzzley_config_manager->read_muzzley_devicekey_file(string(ROUTER_DEVICEKEY_PATH));
-    cout << "Readed RouterID: " << devicekey << endl << flush;
-    if(devicekey != ""){
-        routerid = devicekey;
-        muzzley_registered = true;
-        cout << "Stored RouterID: " << routerid << endl << flush;
+    std::thread upnp_thread([&] (){
+        muzzley_upnp_manager->loop();
+    });
+    upnp_thread.detach();
+    
+    string devicekey_json = muzzley_config_manager->read_muzzley_devicekey_file(string(ROUTER_DEVICEKEY_PATH));
+    
+ 	string err;
+    auto read_devicekey_obj = Json::parse(devicekey_json, err);
+
+    string read_router = read_devicekey_obj["router"].string_value();
+    string read_token = read_devicekey_obj["token"].string_value();
+
+    if(read_router != ""){
+
+        cout << "Readed RouterID Json: " << devicekey_json << endl << flush;
+        cout << "Readed RouterID: " << read_router << endl << flush;
+        cout << "Readed Token: " << read_token << endl << flush;
+
+        if(read_router != ""){
+            routerid = read_router;
+        	token = read_token;
+
+            //Init Muzzley Connection somehow at this point...
+            m_transport = new MqttTransport(this);
+
+            m_transport->SetCredentials(routerid, token);
+            m_transport->Connect();
+
+
+            m_transport->Subscribe(string("router/") + routerid + string("/io/i/type/alljoyn"));
+            cout << string("Subscribed to: ") + string("router/") + routerid + string("/io/i/type/alljoyn") << endl << flush;
+            m_transport->Subscribe(string("router/") + routerid + string("/io/i/type/upnp"));
+            cout << string("Subscribed to: ") + string("router/") + routerid + string("/io/i/type/upnp") << endl << flush;
+            m_transport->Subscribe(string("router/") + routerid + string("/io/i/type/config"));
+            cout << string("Subscribed to: ") + string("router/") + routerid + string("/io/i/type/config") << endl << flush;
+            
+
+            Json unknown_req = Json::object {
+                { "router", routerid },
+                { "subscriptions", Json::array {} }
+            };
+            std::string unknown_req_str = unknown_req.dump();
+
+            Transport::ConnectionError status = m_transport->Send(string("router/") + routerid + string("/io/o/type/config"), unknown_req_str);
+
+
+            MUZZLEYConnector::RemoteSourcePresenceStateChanged("MuzzleyConnector", m_transport->connected, m_transport->none);
+            MUZZLEYConnector::RemoteSourcePresenceStateChanged("Controlle", m_transport->connected, m_transport->none);
+            MUZZLEYConnector::RemoteSourcePresenceStateChanged("LIFX Color 1000", m_transport->connected, m_transport->none);
+
+            pthread_mutex_init(&m_remoteAttachmentsMutex, NULL);
+
+            m_propertyBus.Start();
+            m_propertyBus.Connect();
+
+        	muzzley_registered = true;
+        }
+       
     }else{
+
         sole::uuid u4 = sole::uuid4();
         routerid = u4.str();
-        muzzley_registered = false;
-        muzzley_config_manager->write_muzzley_devicekey_file(string(ROUTER_DEVICEKEY_PATH), routerid);
-        cout << "Generated RouterID: " << routerid << endl << flush;
-    }
+        token = "";
 
-    muzzley_upnp_manager = new MuzzleyUPNPManager();
-    
+        Json devicekey_obj = Json::object {
+            { "router", routerid },
+            { "token", token }
+        };
+    	
+    	std::string devicekey_str = devicekey_obj.dump();
+        muzzley_config_manager->write_muzzley_devicekey_file(string(ROUTER_DEVICEKEY_PATH), devicekey_str);
+        cout << "Generated RouterID: " << devicekey_str << endl << flush;
+        
+        //Init Muzzley Connection somehow at this point...
+        auth_transport = new MqttTransport(this);
+        auth_transport->Connect();
+        
 
-    //Init Muzzley Connection somehow at this point...
-    m_transport = new MqttTransport(this);
-
-    m_transport->Subscribe(string("router/") + routerid + string("/io/i/type/alljoyn"));
-    m_transport->Subscribe(string("router/") + routerid + string("/io/i/type/upnp"));
-    m_transport->Subscribe(string("router/") + routerid + string("/io/i/type/config"));
-
-    MUZZLEYConnector::RemoteSourcePresenceStateChanged("MuzzleyConnector", m_transport->connected, m_transport->none);
-
-    MUZZLEYConnector::RemoteSourcePresenceStateChanged("Controlle", m_transport->connected, m_transport->none);
-    MUZZLEYConnector::RemoteSourcePresenceStateChanged("LIFX Color 1000", m_transport->connected, m_transport->none);
-
-
-    pthread_mutex_init(&m_remoteAttachmentsMutex, NULL);
-
-    m_propertyBus.Start();
-    m_propertyBus.Connect();
-
-    muzzley_running = true;
-    muzzley_registered = false;
-
-    Json unknown_req = Json::object {
+        Json unknown_req = Json::object {
             { "router", routerid },
             { "subscriptions", Json::array {} }
         };
-    std::string unknown_req_str = unknown_req.dump();
+        std::string unknown_req_str = unknown_req.dump();
 
-    if(!muzzley_registered){
-        std::string topic = string("router/unknown/io/o/type/config");
-        Transport::ConnectionError status = m_transport->Send(topic, unknown_req_str);
-    }else{
-        std::string topic = string("router/") + routerid + string("/io/o/type/config");
-        Transport::ConnectionError status = m_transport->Send(topic, unknown_req_str); 
+
+        auth_transport->Subscribe(string("router/") + routerid + string("/io/i/type/config"));
+        Transport::ConnectionError status = auth_transport->Send(string("router/unknown/io/o/type/config"), unknown_req_str);
+
+        muzzley_registered = false;
+
     }
-
-    /*
-    //JSON Parser*********************************************
-    const string simple_test = "{\"k1\":\"v1\", \"k2\":42, \"k3\":[\"a\",123,true,false,null]}";
-
-    string err;
-    auto json = Json::parse(simple_test, err);
-
-    std::cout << "k1: " << json["k1"].string_value() << "\n";
-    std::cout << "k3: " << json["k3"].dump() << "\n";
-
-
-    Json my_json = Json::object {
-        { "key1", "value1" },
-        { "key2", false },
-        { "key3", Json::array { 1, 2, 3 } },
-    };
-
-    std::string json_str = my_json.dump();
-    printf("%s\n", json_str.c_str());
-
-
-    //**********************************************************
-    */   
-
-
 }
 
 MUZZLEYConnector::~MUZZLEYConnector()
@@ -838,14 +853,7 @@ MUZZLEYConnector::Start()
 
     // Listen for messages. Blocks until transport.Stop() is called.
 
-    //After connecting to muzzley... 
-    std::thread upnp_thread([&] (){
-            muzzley_upnp_manager->loop();
-        });
-    upnp_thread.detach();
-    
-    //MUZZLEYConnector::LostAdvertisedName();
-
+    muzzley_running = true;
     while(muzzley_running){
         LOG_RELEASE("Running_ok...");
         sleep(5);    
@@ -3139,7 +3147,7 @@ MUZZLEYConnector::MessageReceived(
 
         }
 
-        
+       
     
         //*************************************************************************    
         
@@ -3150,9 +3158,50 @@ MUZZLEYConnector::MessageReceived(
         string err;
         auto json = Json::parse(message, err);
 
-        string routerid = json["router"].string_value();
+        string msg_routerid = json["router"].string_value();
+        string msg_token = json["token"].string_value();       
         auto subscriptions = json["subscriptions"];
 
+        if(token == "" && msg_token != ""){
+            routerid = msg_routerid;
+            token = msg_token;
+            
+            Json devicekey_obj = Json::object {
+                { "router", routerid },
+                { "token", token }
+            };
+        
+            std::string devicekey_str = devicekey_obj.dump();
+            muzzley_config_manager->write_muzzley_devicekey_file(string(ROUTER_DEVICEKEY_PATH), devicekey_str);
+            cout << "Stored RouterID Json: " << devicekey_str << endl << flush;
+            
+            //Init Muzzley Connection somehow at this point...
+            m_transport = new MqttTransport(this);
+            m_transport->SetCredentials(routerid, token);
+            m_transport->Connect();
+
+
+            m_transport->Subscribe(string("router/") + routerid + string("/io/i/type/alljoyn"));
+            m_transport->Subscribe(string("router/") + routerid + string("/io/i/type/upnp"));
+            m_transport->Subscribe(string("router/") + routerid + string("/io/i/type/config"));
+
+            MUZZLEYConnector::RemoteSourcePresenceStateChanged("MuzzleyConnector", m_transport->connected, m_transport->none);
+            MUZZLEYConnector::RemoteSourcePresenceStateChanged("Controlle", m_transport->connected, m_transport->none);
+            MUZZLEYConnector::RemoteSourcePresenceStateChanged("LIFX Color 1000", m_transport->connected, m_transport->none);
+
+            pthread_mutex_init(&m_remoteAttachmentsMutex, NULL);
+
+            m_propertyBus.Start();
+            m_propertyBus.Connect();
+
+            muzzley_registered = true;
+            delete auth_transport;
+            cout << "Registered router sucessfully and deleted auth connection" << endl << flush;
+
+        }else{
+            cout << "Router already registered" << endl << flush;
+        }
+    
         if(subscriptions.array_items().size()>0){
             for(unsigned int i=0; i<subscriptions.array_items().size(); i++){
                 std::cout << "Subscription #:" << i << endl << flush;
@@ -3168,7 +3217,7 @@ MUZZLEYConnector::MessageReceived(
                 int muzzley_subscription_pos = muzzley_config_manager->get_muzzley_subscription_componentid_pos(component);
                 if(muzzley_subscription_pos==-1){
                     muzzley_config_manager->add_muzzley_subscription(profile, channel, component);
-                    std::cout << "Addded Muzzley Subscription successfully!" << std::endl << std::flush;
+                    std::cout << "Added Muzzley Subscription successfully!" << std::endl << std::flush;
                 }else{
                     std::cout << "Already found the same UPNP description on pos#: " << muzzley_subscription_pos << std::endl << std::flush;
                 }
@@ -3225,6 +3274,7 @@ MUZZLEYConnector::MessageReceived(
             }
 
         }
+        
         muzzley_config_manager->print_muzzley_subscription_vector();
     }
 }

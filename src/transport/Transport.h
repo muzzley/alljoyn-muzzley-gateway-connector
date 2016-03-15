@@ -50,7 +50,8 @@ public:
 
     ConnectionError Run();
     void Stop();
-    
+    void SetCredentials(const std::string& username, const std::string& password);
+    void Connect();
     void Subscribe(const std::string& topic);
     ConnectionError Send(const std::string& topic, const std::string& message);
     ConnectionState GetConnectionState() const;
@@ -62,6 +63,9 @@ public:
 
 protected:
     virtual ConnectionError RunOnce() = 0;
+
+    virtual void  SetCredentialsImpl(const std::string& username, const std::string& password) = 0;
+    virtual void  ConnectImpl() = 0;
 
     virtual void StopImpl() = 0;
     virtual void SubscribeImpl(const std::string& topic) = 0;

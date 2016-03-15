@@ -187,6 +187,13 @@ static void SigIntHandler(int sig)
     }
 }
 
+/*
+string getJID()
+{
+    return s_User;
+}
+*/
+
 void getConfigurationFields(){
     ConfigParser configParser(CONF_FILE.c_str());
     if(!configParser.isConfigValid()){
