@@ -1,6 +1,6 @@
 ## Muzzley-Alljoyn Gateway Connector
 
-`muzzleyconn` is an application that connects local AllJoyn networks with Muzzley Cloud services over MQTT.
+The Muzzley-Alljoyn Gateway Connector is an application that connects local AllJoyn networks with Muzzley Cloud services over MQTT.
 See http://allseenalliance.org for more information about AllJoyn, and http://muzzley.com for more information about Muzzley.
 
 ## Motivation
